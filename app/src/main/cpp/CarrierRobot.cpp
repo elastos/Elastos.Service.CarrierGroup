@@ -2,6 +2,7 @@
 // Created by luocf on 2019/6/13.
 //
 #include <cstring>
+#include <future>
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include <Tools/Log.hpp>
@@ -40,9 +41,18 @@ namespace chatrobot {
         return 0;
     }
 
+    void CarrierRobot::runCarrier() {
+        int ret = ela_run(mCarrier.get(), 500);
+        if(ret < 0) {
+            ela_kill(mCarrier.get());
+            Log::E(Log::TAG, "Failed to run carrier!");
+            return;
+        }
+    }
     void CarrierRobot::OnCarrierConnection(ElaCarrier *carrier,
                                            ElaConnectionStatus status, void *context) {
         auto channel = reinterpret_cast<CarrierRobot *>(context);
+        Log::I(Log::TAG, "OnCarrierConnection status: %d", status);
         std::string carrierAddr, carrierUsrId;
         channel->getAddress(carrierAddr);
         GetCarrierUsrIdByAddress(carrierAddr, carrierUsrId);
@@ -50,7 +60,7 @@ namespace chatrobot {
         /*channel->mChannelStatus = ( status == ElaConnectionStatus_Connected
                                    ? ChannelListener::ChannelStatus::Online
                                    : ChannelListener::ChannelStatus::Offline);
-       Log::D(Log::TAG, "OnCarrierConnection status: %d", channel->mChannelStatus);
+       Log::I(Log::TAG, "OnCarrierConnection status: %d", channel->mChannelStatus);
        if(channel->mChannelListener.get() != nullptr) {
            channel->mChannelListener->onStatusChanged(carrierUsrId, channel->mChannelType, channel->mChannelStatus);
        }*/
@@ -59,8 +69,9 @@ namespace chatrobot {
     void CarrierRobot::OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,
                                               const ElaUserInfo *info,
                                               const char *hello, void *context) {
-        Log::D(Log::TAG, "OnCarrierFriendRequest from: %s", friendid);
+        Log::I(Log::TAG, "OnCarrierFriendRequest from: %s", friendid);
         auto channel = reinterpret_cast<CarrierRobot *>(context);
+        ela_accept_friend(carrier, friendid);
 
         /*if(channel->mChannelListener.get() != nullptr) {
             channel->mChannelListener->onFriendRequest(friendid, channel->mChannelType, hello);
@@ -69,7 +80,7 @@ namespace chatrobot {
 
     void CarrierRobot::OnCarrierFriendConnection(ElaCarrier *carrier, const char *friendid,
                                                  ElaConnectionStatus status, void *context) {
-        Log::D(Log::TAG, "OnCarrierFriendConnection from: %s %d", friendid, status);
+        Log::I(Log::TAG, "OnCarrierFriendConnection from: %s %d", friendid, status);
         auto channel = reinterpret_cast<CarrierRobot *>(context);
         /*
                 if(channel->mChannelListener.get() != nullptr) {
@@ -82,7 +93,7 @@ namespace chatrobot {
 
     void CarrierRobot::OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                               const void *msg, size_t len, void *context) {
-        Log::D(Log::TAG, "OnCarrierFriendMessage from: %s len=%d", from, len);
+        Log::I(Log::TAG, "OnCarrierFriendMessage from: %s len=%d", from, len);
 
         auto channel = reinterpret_cast<CarrierRobot *>(context);
         auto data = reinterpret_cast<const uint8_t *>(msg);
@@ -99,7 +110,7 @@ namespace chatrobot {
         if(isPkgData == true) {
             dataOffset = PkgMagicSize;
             dataComplete = (data[PkgMagicDataIdx] == data[PkgMagicDataCnt] - 1 ? true : false);
-            Log::D(Log::TAG, "OnCarrierFriendMessage PkgMagicData Idx/Cnt=%d/%d", data[PkgMagicDataIdx], data[PkgMagicDataCnt]);
+            Log::I(Log::TAG, "OnCarrierFriendMessage PkgMagicData Idx/Cnt=%d/%d", data[PkgMagicDataIdx], data[PkgMagicDataCnt]);
         }
 
         auto& dataCache = channel->mRecvDataCache[from];
@@ -128,9 +139,8 @@ namespace chatrobot {
         // set BootstrapNode
         size_t carrierNodeSize = mCarrierConfig->mBootstrapNodes.size();
         BootstrapNode carrierNodeArray[carrierNodeSize];
-        int l = sizeof(carrierNodeSize);
 
-        memset(carrierNodeArray, 0, sizeof(BootstrapNode) * carrierNodeSize);
+        memset(carrierNodeArray, 0, sizeof(carrierNodeArray));
         for (int idx = 0; idx < carrierNodeSize; idx++) {
             const auto &node = mCarrierConfig->mBootstrapNodes[idx];
             carrierNodeArray[idx].ipv4 = strdup(node->mIpv4->c_str());
@@ -176,6 +186,22 @@ namespace chatrobot {
             Log::E(Log::TAG, "CarrierRobot::start failed! ret=%s(0x%x)", strerr_buf, err);
             return ErrCode::FailedCarrier;
         }
+        //runCarrier();
+        //std::async(std::bind(&CarrierRobot::runCarrier, this));
+        return 0;
+    }
+
+    int CarrierRobot::getUserId(std::string &userid){
+        char addr[ELA_MAX_ID_LEN + 1] = {0};
+        auto ret = ela_get_userid(mCarrier.get(), addr, sizeof(addr));
+        if (ret == nullptr) {
+            int err = ela_get_error();
+            char strerr_buf[512] = {0};
+            ela_get_strerror(err, strerr_buf, sizeof(strerr_buf));
+            return ErrCode::FailedCarrier;
+        }
+
+        userid = addr;
         return 0;
     }
 

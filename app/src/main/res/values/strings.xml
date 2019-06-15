@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">ChatRobot</string>
+    <string name="app_name">聊天机器人</string>
+    <string name="robot_title">聊天机器人</string>
+
 </resources>

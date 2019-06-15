@@ -21,6 +21,7 @@ namespace chatrobot {
         ~CarrierRobot();
         int start(const char* data_dir);
         int getAddress(std::string& address);
+        int getUserId(std::string& userid);
         static void OnCarrierConnection(ElaCarrier *carrier,
                                                ElaConnectionStatus status, void *context);
         static void OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,
@@ -33,9 +34,11 @@ namespace chatrobot {
         static void OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                                   const void *msg, size_t len, void *context);
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
+        void runCarrier();
     private:
         static CarrierRobot* instance;
         CarrierRobot();
+
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;
     };
