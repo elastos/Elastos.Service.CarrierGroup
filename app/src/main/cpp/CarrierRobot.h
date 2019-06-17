@@ -8,8 +8,10 @@
 #include <stdlib.h>
 #include <functional>
 #include <memory> // std::unique_ptr
+#include <ctime>
 #include <ela_carrier.h>
 #include <ela_session.h>
+#include "DataBase/DatabaseProxy.h"
 #include <CarrierConfig.h>
 
 namespace chatrobot {
@@ -22,6 +24,7 @@ namespace chatrobot {
         int start(const char* data_dir);
         int getAddress(std::string& address);
         int getUserId(std::string& userid);
+        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> getFriendList();
         static void OnCarrierConnection(ElaCarrier *carrier,
                                                ElaConnectionStatus status, void *context);
         static void OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,
@@ -35,12 +38,20 @@ namespace chatrobot {
                                                   const void *msg, size_t len, void *context);
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
         void runCarrier();
+        void updateMemberInfo(std::shared_ptr<std::string> friendid, ElaConnectionStatus status,
+                              std::time_t time_stamp);
+        void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
     private:
         static CarrierRobot* instance;
         CarrierRobot();
-
+        std::time_t getTimeStamp();
+        bool handleSpecialMessage(std::shared_ptr<std::string> friend_id,
+                                  std::shared_ptr<std::string> message);
+        bool relayMessages(std::shared_ptr<std::string> friend_id);
+        std::shared_ptr<std::string> mCreaterFriendId;
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;
+        std::shared_ptr<DatabaseProxy> mDatabaseProxy;
     };
 }
 

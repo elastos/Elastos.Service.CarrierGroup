@@ -23,13 +23,13 @@ namespace chatrobot {
 
     CarrierRobot::CarrierRobot() {
         mCarrierConfig = std::make_shared<CarrierConfig>();
+        mDatabaseProxy = std::make_shared<DatabaseProxy>();
     }
 
-    int CarrierRobot::GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId)
-    {
+    int CarrierRobot::GetCarrierUsrIdByAddress(const std::string &address, std::string &usrId) {
         char buf[ELA_MAX_ID_LEN + 1] = {0};
         auto ret = ela_get_id_by_address(address.c_str(), buf, sizeof(buf));
-        if(ret == nullptr) {
+        if (ret == nullptr) {
             int err = ela_get_error();
             char strerr_buf[512] = {0};
             ela_get_strerror(err, strerr_buf, sizeof(strerr_buf));
@@ -43,12 +43,13 @@ namespace chatrobot {
 
     void CarrierRobot::runCarrier() {
         int ret = ela_run(mCarrier.get(), 500);
-        if(ret < 0) {
+        if (ret < 0) {
             ela_kill(mCarrier.get());
             Log::E(Log::TAG, "Failed to run carrier!");
             return;
         }
     }
+
     void CarrierRobot::OnCarrierConnection(ElaCarrier *carrier,
                                            ElaConnectionStatus status, void *context) {
         auto channel = reinterpret_cast<CarrierRobot *>(context);
@@ -56,70 +57,98 @@ namespace chatrobot {
         std::string carrierAddr, carrierUsrId;
         channel->getAddress(carrierAddr);
         GetCarrierUsrIdByAddress(carrierAddr, carrierUsrId);
-
-        /*channel->mChannelStatus = ( status == ElaConnectionStatus_Connected
-                                   ? ChannelListener::ChannelStatus::Online
-                                   : ChannelListener::ChannelStatus::Offline);
-       Log::I(Log::TAG, "OnCarrierConnection status: %d", channel->mChannelStatus);
-       if(channel->mChannelListener.get() != nullptr) {
-           channel->mChannelListener->onStatusChanged(carrierUsrId, channel->mChannelType, channel->mChannelStatus);
-       }*/
     }
 
     void CarrierRobot::OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,
                                               const ElaUserInfo *info,
                                               const char *hello, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendRequest from: %s", friendid);
-        auto channel = reinterpret_cast<CarrierRobot *>(context);
         ela_accept_friend(carrier, friendid);
 
-        /*if(channel->mChannelListener.get() != nullptr) {
-            channel->mChannelListener->onFriendRequest(friendid, channel->mChannelType, hello);
-        }*/
+    }
+
+    std::time_t CarrierRobot::getTimeStamp() {
+        std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now());
+        return tp.time_since_epoch().count();
     }
 
     void CarrierRobot::OnCarrierFriendConnection(ElaCarrier *carrier, const char *friendid,
                                                  ElaConnectionStatus status, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendConnection from: %s %d", friendid, status);
-        auto channel = reinterpret_cast<CarrierRobot *>(context);
-        /*
-                if(channel->mChannelListener.get() != nullptr) {
-                    auto chStatus = ( status == ElaConnectionStatus_Connected
-                                      ? ChannelListener::ChannelStatus::Online
-                                      : ChannelListener::ChannelStatus::Offline);
-                    channel->mChannelListener->onFriendStatusChanged(friendid, channel->mChannelType, chStatus);
-                }*/
+        auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
+        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), status,
+                                        carrier_robot->getTimeStamp());
+    }
+
+    void CarrierRobot::updateMemberInfo(std::shared_ptr<std::string> friendid,
+                                        ElaConnectionStatus status,
+                                        std::time_t time_stamp) {
+        if (mCreaterFriendId.get() == nullptr) {
+            mCreaterFriendId = friendid;
+        }
+        ElaFriendInfo info;
+        int ret = ela_get_friend_info(mCarrier.get(), friendid.get()->c_str(), &info);
+        std::shared_ptr<std::string> nickanme;
+        if (ret == 0) {
+            nickanme = std::make_shared<std::string>(info.user_info.name);
+        } else {
+            nickanme = std::make_shared<std::string>("");
+        }
+
+        mDatabaseProxy->updateMemberInfo(friendid, nickanme, status, time_stamp);
+        //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
+        if (status == ElaConnectionStatus_Connected) {
+            //发送添加好友消息
+            const char* out = "message-test";
+            ela_send_friend_message(mCarrier.get(), friendid.get()->c_str(), out, strlen(out));
+            relayMessages(friendid);
+        }
+    }
+    bool CarrierRobot::relayMessages(std::shared_ptr<std::string> friend_id) {
+        std::shared_ptr<MemberInfo> member_info = mDatabaseProxy->getMemberInfo(friend_id);
+        std::time_t offline_time_stamp = member_info->mLastOffLineTimeStamp;
+        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(offline_time_stamp);
+        for (int i = 0; i < message_list->size(); i++) {
+            std::shared_ptr<MessageInfo> message = message_list->at(i);
+            if (message.get() != nullptr &&
+                (*message->mFriendid.get()).compare(*friend_id.get())) {
+                const char* out = message->mMsg.get()->c_str();
+                ela_send_friend_message(mCarrier.get(), message->mFriendid.get()->c_str(), out, strlen(out));
+            }
+        }
+
+        return false;
+    }
+    bool CarrierRobot::handleSpecialMessage(std::shared_ptr<std::string> friend_id,
+                                            std::shared_ptr<std::string> message) {
+        if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
+            //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
+
+        }
+        return false;
+    }
+
+    void CarrierRobot::addMessgae(std::shared_ptr<std::string> friend_id,
+                                  std::shared_ptr<std::string> message, std::time_t send_time) {
+
+        bool spec_command = handleSpecialMessage(friend_id, message);
+        if (spec_command == false) {
+            //save message
+            mDatabaseProxy->addMessgae(friend_id, message, send_time);
+            //将该消息转发给其他人
+            relayMessages(friend_id);
+        }
     }
 
     void CarrierRobot::OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                               const void *msg, size_t len, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendMessage from: %s len=%d", from, len);
-
-        auto channel = reinterpret_cast<CarrierRobot *>(context);
+        auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
         auto data = reinterpret_cast<const uint8_t *>(msg);
-    /*
-        int32_t dataOffset = 0;
-        bool dataComplete = true;
-        bool isPkgData = true;
-        for(auto idx = 0; idx < PkgMagicHeadSize; idx++) {
-            if(data[idx] != PkgMagic[idx]) {
-                isPkgData = false;
-                break;
-            }
-        }
-        if(isPkgData == true) {
-            dataOffset = PkgMagicSize;
-            dataComplete = (data[PkgMagicDataIdx] == data[PkgMagicDataCnt] - 1 ? true : false);
-            Log::I(Log::TAG, "OnCarrierFriendMessage PkgMagicData Idx/Cnt=%d/%d", data[PkgMagicDataIdx], data[PkgMagicDataCnt]);
-        }
-
-        auto& dataCache = channel->mRecvDataCache[from];
-        dataCache.insert(dataCache.end(), data + dataOffset, data + len);
-
-        if(dataComplete == true) {
-            channel->mChannelListener->onReceivedMessage(from, channel->mChannelType, dataCache);
-            dataCache.clear();
-        }*/
+        carrier_robot->addMessgae(std::make_shared<std::string>(from),
+                                  std::make_shared<std::string>(data),
+                                  carrier_robot->getTimeStamp());
     }
 
     int CarrierRobot::start(const char *data_dir) {
@@ -190,8 +219,10 @@ namespace chatrobot {
         //std::async(std::bind(&CarrierRobot::runCarrier, this));
         return 0;
     }
-
-    int CarrierRobot::getUserId(std::string &userid){
+    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> CarrierRobot::getFriendList() {
+        return  mDatabaseProxy->getFriendList();
+    }
+    int CarrierRobot::getUserId(std::string &userid) {
         char addr[ELA_MAX_ID_LEN + 1] = {0};
         auto ret = ela_get_userid(mCarrier.get(), addr, sizeof(addr));
         if (ret == nullptr) {

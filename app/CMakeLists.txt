@@ -12,9 +12,11 @@ file( GLOB JNI_Source
       "*.cpp" )
 file( GLOB JNI_Include
       "${PROJECT_SOURCE_DIR}/src/main/jni" )
+
 file( GLOB_RECURSE Robot_Source
       "${PROJECT_SOURCE_DIR}/src/main/cpp/"
       "*/*.cpp" )
+
 file( GLOB Robot_Include
       "${PROJECT_SOURCE_DIR}/src/main/cpp" )
 
@@ -29,7 +31,6 @@ include_directories( "${JNI_Include}"
                      "${Robot_Include}"
                     "${Carrier_Include}")
 target_include_directories(chatrobot PUBLIC "src/main/jniLibs/include")
-#link_directories(chatrobot "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/")
 find_library( # Sets the name of the path variable.
               log-lib
 
@@ -47,7 +48,6 @@ target_link_libraries( # Specifies the target library.
                        # Links the target library to the log library
                        # included in the NDK.
                        ${log-lib} )
-
 target_link_libraries(chatrobot
                       "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libcrystal.so"
                       "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libelacarrier.so"

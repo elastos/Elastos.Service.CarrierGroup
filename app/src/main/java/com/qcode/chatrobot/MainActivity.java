@@ -8,12 +8,21 @@ import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 
+import com.qcode.chatrobot.ui.MemberInfo;
+import com.qcode.chatrobot.ui.MemberListAdapter;
 import com.qcode.chatrobot.ui.QRCode;
 
 import org.w3c.dom.Text;
+
+import java.lang.reflect.Member;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity {
     
@@ -21,7 +30,7 @@ public class MainActivity extends Activity {
     static {
         System.loadLibrary("chatrobot");
     }
-    
+    private ListView mMemberListView;
     private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     private Context mContext;
     
@@ -33,8 +42,8 @@ public class MainActivity extends Activity {
         TextView text_address = findViewById(R.id.text_address);
         TextView text_userid = findViewById(R.id.text_userid);
         startChatRobot(getLocalCacheDir());
-         String address = getAddress();
-         String user_id = getUserId();
+        String address = getAddress();
+        String user_id = getUserId();
         ImageView view = findViewById(R.id.qr_image);
         MyQRCode qrcode = new MyQRCode(-1, 1);
         view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
@@ -46,6 +55,26 @@ public class MainActivity extends Activity {
                 runChatRobot();
             }
         }).start();
+    
+        mMemberListView = (ListView) findViewById(R.id.memberList);
+        //获取当前ListView点击的行数，并且得到该数据
+        mMemberListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            
+            }
+        });
+        
+        List<MemberInfo> mUserList = new ArrayList<MemberInfo>();
+        //模拟数据库
+        for (int i = 0; i < 15; i++) {
+            MemberInfo ue = new MemberInfo("abcdefghijklmnopqrst"+i, i+"");//给实体类赋值
+            mUserList.add(ue);
+        }
+        
+        MemberListAdapter adapter = new MemberListAdapter(this.getLayoutInflater());
+        adapter.setData(mUserList);
+        mMemberListView.setAdapter(adapter);
     }
     
     class MyQRCode extends QRCode {
@@ -96,12 +125,11 @@ public class MainActivity extends Activity {
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
      */
-    public native String stringFromJNI();
-    
     public native int startChatRobot(String data_dir);
     
     public native int runChatRobot();
     
     public native String getAddress();
+    
     public native String getUserId();
 }

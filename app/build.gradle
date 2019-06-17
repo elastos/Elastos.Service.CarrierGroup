@@ -12,12 +12,14 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++14 -Wall -frtti -fexceptions -DVERSION_CODE=${rootProject.ext.versionCode}"
+                arguments "-DANDROID_STL=c++_static"
             }
         }
         ndk {
             abiFilters 'armeabi-v7a'
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
