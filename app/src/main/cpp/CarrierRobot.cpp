@@ -145,7 +145,7 @@ namespace chatrobot {
                                               const void *msg, size_t len, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendMessage from: %s len=%d", from, len);
         auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
-        auto data = reinterpret_cast<const uint8_t *>(msg);
+        const char* data = (const char*)(msg);
         carrier_robot->addMessgae(std::make_shared<std::string>(from),
                                   std::make_shared<std::string>(data),
                                   carrier_robot->getTimeStamp());
@@ -219,9 +219,7 @@ namespace chatrobot {
         //std::async(std::bind(&CarrierRobot::runCarrier, this));
         return 0;
     }
-    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> CarrierRobot::getFriendList() {
-        return  mDatabaseProxy->getFriendList();
-    }
+
     int CarrierRobot::getUserId(std::string &userid) {
         char addr[ELA_MAX_ID_LEN + 1] = {0};
         auto ret = ela_get_userid(mCarrier.get(), addr, sizeof(addr));

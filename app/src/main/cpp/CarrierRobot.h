@@ -24,7 +24,6 @@ namespace chatrobot {
         int start(const char* data_dir);
         int getAddress(std::string& address);
         int getUserId(std::string& userid);
-        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> getFriendList();
         static void OnCarrierConnection(ElaCarrier *carrier,
                                                ElaConnectionStatus status, void *context);
         static void OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,

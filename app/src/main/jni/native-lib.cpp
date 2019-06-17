@@ -51,4 +51,3 @@ Java_com_qcode_chatrobot_MainActivity_runChatRobot(
     return 0;
 }
 }
-
