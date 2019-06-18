@@ -64,16 +64,10 @@ public class MainActivity extends Activity {
             
             }
         });
-        
-        List<MemberInfo> mUserList = new ArrayList<MemberInfo>();
-        //模拟数据库
-        for (int i = 0; i < 15; i++) {
-            MemberInfo ue = new MemberInfo("abcdefghijklmnopqrst"+i, i+"");//给实体类赋值
-            mUserList.add(ue);
-        }
+        MemberInfo[] member_info = getMemberList();
         
         MemberListAdapter adapter = new MemberListAdapter(this.getLayoutInflater());
-        adapter.setData(mUserList);
+        adapter.setData(member_info);
         mMemberListView.setAdapter(adapter);
     }
     
@@ -132,4 +126,6 @@ public class MainActivity extends Activity {
     public native String getAddress();
     
     public native String getUserId();
+    
+    public native MemberInfo[] getMemberList();
 }

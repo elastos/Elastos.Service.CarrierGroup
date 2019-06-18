@@ -64,7 +64,6 @@ namespace chatrobot {
                                               const char *hello, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendRequest from: %s", friendid);
         ela_accept_friend(carrier, friendid);
-
     }
 
     std::time_t CarrierRobot::getTimeStamp() {
@@ -140,7 +139,10 @@ namespace chatrobot {
             relayMessages(friend_id);
         }
     }
+    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>CarrierRobot::getFriendList() {
 
+        return mDatabaseProxy->getFriendList();
+    }
     void CarrierRobot::OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                               const void *msg, size_t len, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendMessage from: %s len=%d", from, len);

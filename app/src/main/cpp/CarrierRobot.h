@@ -40,6 +40,7 @@ namespace chatrobot {
         void updateMemberInfo(std::shared_ptr<std::string> friendid, ElaConnectionStatus status,
                               std::time_t time_stamp);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
+        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>getFriendList();
     private:
         static CarrierRobot* instance;
         CarrierRobot();

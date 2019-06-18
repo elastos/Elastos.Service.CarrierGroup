@@ -83,6 +83,21 @@ namespace chatrobot {
 
     std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> DatabaseProxy::getFriendList() {
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+        /*mMemberList->insert(std::pair<std::string, std::shared_ptr<MemberInfo>>(std::string("abcdefghijk"),
+                                                                                std::make_shared<MemberInfo>(
+                                                                                        std::make_shared<std::string>("abcdefghijk"),
+                                                                                        std::make_shared<std::string>("abc"),
+                                                                                        ElaConnectionStatus_Connected,
+                                                                                        1234,
+                                                                                        2345)));
+        mMemberList->insert(std::pair<std::string, std::shared_ptr<MemberInfo>>(std::string("abcdefghijkaaaaa"),
+                                                                                std::make_shared<MemberInfo>(
+                                                                                        std::make_shared<std::string>("abcdefghijkaaaaa"),
+                                                                                        std::make_shared<std::string>("abcaaa"),
+                                                                                        ElaConnectionStatus_Connected,
+                                                                                        1234,
+                                                                                        2345)));
+*/
 
         for (auto item = mMemberList->begin(); item != mMemberList->end(); item++) {
             auto value = item->second;
