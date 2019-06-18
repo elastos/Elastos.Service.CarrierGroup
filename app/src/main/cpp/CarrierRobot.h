@@ -47,7 +47,8 @@ namespace chatrobot {
         std::time_t getTimeStamp();
         bool handleSpecialMessage(std::shared_ptr<std::string> friend_id,
                                   std::shared_ptr<std::string> message);
-        bool relayMessages(std::shared_ptr<std::string> friend_id);
+        bool relayMessagesToOthers(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
+        bool relayMessagesForOnlineItem(std::shared_ptr<std::string> friend_id);
         std::shared_ptr<std::string> mCreaterFriendId;
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;

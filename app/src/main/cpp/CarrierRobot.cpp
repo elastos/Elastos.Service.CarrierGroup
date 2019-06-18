@@ -98,22 +98,33 @@ namespace chatrobot {
         mDatabaseProxy->updateMemberInfo(friendid, nickanme, status, time_stamp);
         //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
         if (status == ElaConnectionStatus_Connected) {
-            //发送添加好友消息
-            const char* out = "message-test";
-            ela_send_friend_message(mCarrier.get(), friendid.get()->c_str(), out, strlen(out));
-            relayMessages(friendid);
+            relayMessagesForOnlineItem(friendid);
         }
     }
-    bool CarrierRobot::relayMessages(std::shared_ptr<std::string> friend_id) {
+    bool CarrierRobot::relayMessagesForOnlineItem(std::shared_ptr<std::string> friend_id) {
         std::shared_ptr<MemberInfo> member_info = mDatabaseProxy->getMemberInfo(friend_id);
         std::time_t offline_time_stamp = member_info->mLastOffLineTimeStamp;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(offline_time_stamp);
         for (int i = 0; i < message_list->size(); i++) {
             std::shared_ptr<MessageInfo> message = message_list->at(i);
-            if (message.get() != nullptr &&
-                (*message->mFriendid.get()).compare(*friend_id.get())) {
+            if (message.get() != nullptr) {
                 const char* out = message->mMsg.get()->c_str();
                 ela_send_friend_message(mCarrier.get(), message->mFriendid.get()->c_str(), out, strlen(out));
+            }
+        }
+
+        return false;
+    }
+
+    bool CarrierRobot::relayMessagesToOthers(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time) {
+        std::map<std::string, std::shared_ptr<MemberInfo>>memberlist = mDatabaseProxy->getFriendList();
+        std::map<std::string, std::shared_ptr<chatrobot::MemberInfo>>::iterator iter;
+        for (iter = memberlist.begin(); iter != memberlist.end(); iter++) {
+            std::shared_ptr<chatrobot::MemberInfo> memberInfo =iter->second;
+            if (memberInfo->mFriendid.get()->compare(*friend_id.get()) != 0
+                    && memberInfo->mLastOnLineTimeStamp > memberInfo->mLastOffLineTimeStamp) {
+                const char* out = message.get()->c_str();
+                ela_send_friend_message(mCarrier.get(), memberInfo->mFriendid.get()->c_str(), out, strlen(out));
             }
         }
 
@@ -136,12 +147,18 @@ namespace chatrobot {
             //save message
             mDatabaseProxy->addMessgae(friend_id, message, send_time);
             //将该消息转发给其他人
-            relayMessages(friend_id);
+            relayMessagesToOthers(friend_id, message, send_time);
         }
     }
     std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>CarrierRobot::getFriendList() {
+        std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
+        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+        for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
+            auto value = item->second;
+            friendlist->push_back(value);
+        }
 
-        return mDatabaseProxy->getFriendList();
+        return friendlist;
     }
     void CarrierRobot::OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                               const void *msg, size_t len, void *context) {

@@ -31,10 +31,10 @@ namespace chatrobot {
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>>
         getMessages(std::time_t offline_time_stamp);
 
-        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> getFriendList();
+        std::map<std::string, std::shared_ptr<MemberInfo>> getFriendList();
 
     private:
-        std::shared_ptr<std::map<std::string, std::shared_ptr<MemberInfo>>> mMemberList;
+        std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> mMessageList;
     };
 

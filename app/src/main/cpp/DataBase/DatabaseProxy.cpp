@@ -7,12 +7,11 @@
 
 namespace chatrobot {
     DatabaseProxy::DatabaseProxy() {
-        mMemberList = std::make_shared<std::map<std::string, std::shared_ptr<MemberInfo>>>();
         mMessageList = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
     }
 
     DatabaseProxy::~DatabaseProxy() {
-        mMemberList.reset();
+        mMemberList.clear();
         mMessageList.reset();
     }
 
@@ -25,42 +24,29 @@ namespace chatrobot {
         std::time_t last_onffine_time = 0;
         if (status == ElaConnectionStatus_Connected) {
             last_online_time = time_stamp;
-            auto iter = mMemberList->find(*friendid.get());
-            if (iter != mMemberList->end()) {
-                auto member_info = iter->second;  //second返回iter的value
-                if (member_info.get() != nullptr) {
-                    last_onffine_time = member_info->mLastOffLineTimeStamp;
-                }
+            std::shared_ptr<MemberInfo> member_info  = mMemberList[*friendid.get()];
+            if (member_info.get() != nullptr) {
+                last_onffine_time = member_info->mLastOffLineTimeStamp;
             }
 
         } else {
             last_onffine_time = time_stamp;
-            auto iter = mMemberList->find(*friendid.get());
-            if (iter != mMemberList->end()) {
-                auto member_info = iter->second;  //second返回iter的value
-                if (member_info.get() != nullptr) {
-                    last_online_time = member_info->mLastOnLineTimeStamp;
-                }
+            std::shared_ptr<MemberInfo> member_info  = mMemberList[*friendid.get()];
+            if (member_info.get() != nullptr) {
+                last_online_time = member_info->mLastOnLineTimeStamp;
             }
         }
-        mMemberList->insert(std::pair<std::string, std::shared_ptr<MemberInfo>>(*friendid.get(),
-                                                                                std::make_shared<MemberInfo>(
-                                                                                        friendid,
-                                                                                        nickname,
-                                                                                        status,
-                                                                                        last_online_time,
-                                                                                        last_onffine_time)));
+        mMemberList[*friendid.get()] = std::make_shared<MemberInfo>(
+                friendid,
+                nickname,
+                status,
+                last_online_time,
+                last_onffine_time);
     }
 
     std::shared_ptr<MemberInfo>
     DatabaseProxy::getMemberInfo(std::shared_ptr<std::string> friendid) {
-
-        auto iter = mMemberList->find(*friendid.get());
-        if (iter != mMemberList->end()) {
-            auto member_info = iter->second;  //second返回iter的value
-            return member_info;
-        }
-        return std::shared_ptr<MemberInfo>(nullptr);
+        return  mMemberList[*friendid.get()];
     }
 
     void DatabaseProxy::addMessgae(std::shared_ptr<std::string> friend_id,
@@ -81,29 +67,7 @@ namespace chatrobot {
         return messages;
     }
 
-    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> DatabaseProxy::getFriendList() {
-        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
-        /*mMemberList->insert(std::pair<std::string, std::shared_ptr<MemberInfo>>(std::string("abcdefghijk"),
-                                                                                std::make_shared<MemberInfo>(
-                                                                                        std::make_shared<std::string>("abcdefghijk"),
-                                                                                        std::make_shared<std::string>("abc"),
-                                                                                        ElaConnectionStatus_Connected,
-                                                                                        1234,
-                                                                                        2345)));
-        mMemberList->insert(std::pair<std::string, std::shared_ptr<MemberInfo>>(std::string("abcdefghijkaaaaa"),
-                                                                                std::make_shared<MemberInfo>(
-                                                                                        std::make_shared<std::string>("abcdefghijkaaaaa"),
-                                                                                        std::make_shared<std::string>("abcaaa"),
-                                                                                        ElaConnectionStatus_Connected,
-                                                                                        1234,
-                                                                                        2345)));
-*/
-
-        for (auto item = mMemberList->begin(); item != mMemberList->end(); item++) {
-            auto value = item->second;
-            friendlist->push_back(value);
-        }
-
-        return friendlist;
+    std::map<std::string, std::shared_ptr<MemberInfo>> DatabaseProxy::getFriendList() {
+        return mMemberList;
     }
 }

@@ -33,7 +33,7 @@ public class MainActivity extends Activity {
     private ListView mMemberListView;
     private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     private Context mContext;
-    
+    private MemberListAdapter mAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,13 +64,21 @@ public class MainActivity extends Activity {
             
             }
         });
-        MemberInfo[] member_info = getMemberList();
-        
-        MemberListAdapter adapter = new MemberListAdapter(this.getLayoutInflater());
-        adapter.setData(member_info);
-        mMemberListView.setAdapter(adapter);
-    }
     
+        mAdapter = new MemberListAdapter(this.getLayoutInflater());
+        mMemberListView.setAdapter(mAdapter);
+        updateMemberList();
+    }
+    void updateMemberList() {
+        MemberInfo[] member_info = getMemberList();
+        mAdapter.setData(member_info);
+        mMainThreadHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                updateMemberList();
+            }
+        }, 1000);
+    }
     class MyQRCode extends QRCode {
         public MyQRCode(int typeNumber, int errorCorrectLevel) {
             super(typeNumber, errorCorrectLevel);

@@ -2,6 +2,8 @@ package com.qcode.chatrobot.ui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,10 +29,12 @@ public class MemberListAdapter extends BaseAdapter {
         mUserList = userList;
         //refresh
         this.notifyDataSetChanged();
+        
     }
+    
     @Override
     public int getCount() {
-        return mUserList.length;
+        return mUserList == null ? 0: mUserList.length;
     }
     
     @Override
@@ -56,7 +60,7 @@ public class MemberListAdapter extends BaseAdapter {
             Log.i("info","有缓存，不需要重新生成"+position);
         }
         mNickNameView = (TextView) view.findViewById(R.id.memberName);//找到Textviewname
-        mNickNameView.setText(mUserList[position].NickName);//设置参数
+        mNickNameView.setText(mUserList[position].FriendId);//设置参数
     
         mStatusView = (TextView) view.findViewById(R.id.memberStatus);//找到Textviewage
         mStatusView.setText(mUserList[position].Status);//设置参数
