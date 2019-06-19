@@ -6,11 +6,12 @@
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include <Tools/Log.hpp>
+#include "ThirdParty/json.hpp"
 #include "CarrierRobot.h"
 #include "ErrCode.h"
 
 namespace chatrobot {
-
+    using Json = nlohmann::json;
     CarrierRobot *CarrierRobot::instance = new CarrierRobot();
 
     CarrierRobot *CarrierRobot::getInstance() {
@@ -101,42 +102,105 @@ namespace chatrobot {
             relayMessagesForOnlineItem(friendid);
         }
     }
+
     bool CarrierRobot::relayMessagesForOnlineItem(std::shared_ptr<std::string> friend_id) {
         std::shared_ptr<MemberInfo> member_info = mDatabaseProxy->getMemberInfo(friend_id);
         std::time_t offline_time_stamp = member_info->mLastOffLineTimeStamp;
-        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(offline_time_stamp);
+        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(
+                offline_time_stamp);
         for (int i = 0; i < message_list->size(); i++) {
             std::shared_ptr<MessageInfo> message = message_list->at(i);
             if (message.get() != nullptr) {
-                const char* out = message->mMsg.get()->c_str();
-                ela_send_friend_message(mCarrier.get(), message->mFriendid.get()->c_str(), out, strlen(out));
+                Json msg_json = Json::object();
+                msg_json["from"] = message->mFriendid.get()->c_str();
+                std::shared_ptr<MemberInfo> msg_member_info = mDatabaseProxy->getMemberInfo(
+                        message->mFriendid);
+                msg_json["nickname"] = msg_member_info->mNickName.get()->c_str();
+                msg_json["sendtime"] = message->mSendTimeStamp;
+                msg_json["content"] = message->mMsg.get()->c_str();
+                ela_send_friend_message(mCarrier.get(), message->mFriendid.get()->c_str(),
+                                        msg_json.dump().c_str(), msg_json.size());
             }
         }
 
         return false;
     }
 
-    bool CarrierRobot::relayMessagesToOthers(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time) {
-        std::map<std::string, std::shared_ptr<MemberInfo>>memberlist = mDatabaseProxy->getFriendList();
+    bool CarrierRobot::relayMessagesToOthers(std::shared_ptr<std::string> friend_id,
+                                             std::shared_ptr<std::string> message,
+                                             std::time_t send_time) {
+        std::map<std::string, std::shared_ptr<MemberInfo>> memberlist = mDatabaseProxy->getFriendList();
         std::map<std::string, std::shared_ptr<chatrobot::MemberInfo>>::iterator iter;
         for (iter = memberlist.begin(); iter != memberlist.end(); iter++) {
-            std::shared_ptr<chatrobot::MemberInfo> memberInfo =iter->second;
+            std::shared_ptr<chatrobot::MemberInfo> memberInfo = iter->second;
             if (memberInfo->mFriendid.get()->compare(*friend_id.get()) != 0
-                    && memberInfo->mLastOnLineTimeStamp > memberInfo->mLastOffLineTimeStamp) {
-                const char* out = message.get()->c_str();
-                ela_send_friend_message(mCarrier.get(), memberInfo->mFriendid.get()->c_str(), out, strlen(out));
+                && memberInfo->mLastOnLineTimeStamp > memberInfo->mLastOffLineTimeStamp) {
+                Json msg_json = Json::object();
+                msg_json["from"] = friend_id.get()->c_str();
+                msg_json["nickname"] = memberInfo->mNickName.get()->c_str();
+                msg_json["sendtime"] = send_time;
+                msg_json["content"] = message.get()->c_str();
+                ela_send_friend_message(mCarrier.get(), memberInfo->mFriendid.get()->c_str(),
+                                        msg_json.dump().c_str(), msg_json.size());
             }
         }
 
         return false;
     }
+
     bool CarrierRobot::handleSpecialMessage(std::shared_ptr<std::string> friend_id,
                                             std::shared_ptr<std::string> message) {
+        bool ret = false;
         if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
             //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
+            Json jsonInfo = Json::parse(*message.get());
+            std::string cmd = jsonInfo['cmd'];
+            Log::I(Log::TAG, "handleSpecialMessage message: %s", message.get()->c_str());
+            if (cmd.empty() == false) {
+                Json ret_json = Json::object();
+                Json result_json = Json::object();
+                ret_json["ack"] = cmd;
+                if (cmd.compare("del") == 0) {
+                    std::string del_userid = jsonInfo["userid"];
+                    int ela_ret = ela_remove_friend(mCarrier.get(), del_userid.c_str());
+                    if (ela_ret == 0) {
+                        result_json["code"] = 0;
+                        ret_json["result"] = result_json;
+                        ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                                ret_json.dump().c_str(), ret_json.size());
+                    } else {
+                        Log::I(Log::TAG, "handleSpecialMessage can't delete this user: %s errno:(0x%x)",
+                               del_userid.c_str(), ela_get_error());
+                    }
+                    ret = true;
+                } else if (cmd.compare("getmemberlist") == 0) {
+                    result_json["code"] = 0;
+                    Json data_json = Json::array();
+                    std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
+                    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+                    for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
+                        std::shared_ptr<MemberInfo> value = item->second;
+                        Json member_json = Json::object();
+                        member_json["userid"] = value->mFriendid.get()->c_str();
+                        member_json["nickname"] = value->mNickName.get()->c_str();
+                        "";
+                        member_json["status"] = value->mStatus;
+                        member_json["online_time"] = value->mLastOnLineTimeStamp;
+                        member_json["offline_time"] = value->mLastOffLineTimeStamp;
+                        data_json.push_back(member_json);
+                    }
 
+                    result_json["data"] = data_json;
+                    ret_json["result"] = result_json;
+                    ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                            ret_json.dump().c_str(), ret_json.size());
+                    ret = true;
+                } else {
+                    Log::I(Log::TAG, "handleSpecialMessage not support this command: %s", cmd.c_str());
+                }
+            }
         }
-        return false;
+        return ret;
     }
 
     void CarrierRobot::addMessgae(std::shared_ptr<std::string> friend_id,
@@ -150,7 +214,8 @@ namespace chatrobot {
             relayMessagesToOthers(friend_id, message, send_time);
         }
     }
-    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>CarrierRobot::getFriendList() {
+
+    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> CarrierRobot::getFriendList() {
         std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
         for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
@@ -160,11 +225,12 @@ namespace chatrobot {
 
         return friendlist;
     }
+
     void CarrierRobot::OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                               const void *msg, size_t len, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendMessage from: %s len=%d", from, len);
         auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
-        const char* data = (const char*)(msg);
+        const char *data = (const char *) (msg);
         carrier_robot->addMessgae(std::make_shared<std::string>(from),
                                   std::make_shared<std::string>(data),
                                   carrier_robot->getTimeStamp());
@@ -217,6 +283,7 @@ namespace chatrobot {
             auto ptr = ela_new(&carrierOpts, &carrierCallbacks, this);
             return ptr;
         };
+
         auto deleter = [=](ElaCarrier *ptr) -> void {
             if (ptr != nullptr) {
                 ela_session_cleanup(ptr);
