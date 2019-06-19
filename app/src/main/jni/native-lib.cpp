@@ -78,7 +78,7 @@ Java_com_qcode_chatrobot_MainActivity_getMemberList(JNIEnv *env, jobject jobj) {
         env->SetObjectField(obj, mFriendId,
                             env->NewStringUTF(memberInfo.get()->mFriendid.get()->c_str()));
         env->SetObjectField(obj, mStatus, env->NewStringUTF(
-                memberInfo.get()->mStatus == ElaConnectionStatus_Connected ? "1" : "0"));
+                memberInfo.get()->mStatus == ElaConnectionStatus_Connected ? "online" : "offline"));
         env->SetObjectArrayElement(infos, i, obj);
     }
 

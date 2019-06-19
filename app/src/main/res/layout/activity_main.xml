@@ -14,7 +14,7 @@
 
     <ListView
         android:id="@+id/memberList"
-        android:layout_width="800px"
+        android:layout_width="900px"
         android:layout_height="wrap_content"
         android:layout_marginTop="200px"
         android:layout_marginLeft="800px"
@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:singleLine="false"
         android:textSize="20dp"
-        android:layout_marginLeft="20px"
+        android:layout_marginLeft="50px"
         android:layout_marginTop="180px"
         android:textColor="#ff999999"/>
 
@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:singleLine="false"
         android:textSize="20dp"
-        android:layout_marginLeft="20px"
+        android:layout_marginLeft="50px"
         android:layout_marginTop="800px"
         android:textColor="#ff999999"/>
 
