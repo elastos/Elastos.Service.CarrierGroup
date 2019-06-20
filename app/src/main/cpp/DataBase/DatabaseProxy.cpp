@@ -4,6 +4,7 @@
 
 #include "DatabaseProxy.h"
 #include <map>
+#include <Tools/Log.hpp>
 
 namespace chatrobot {
     DatabaseProxy::DatabaseProxy() {
@@ -20,28 +21,17 @@ namespace chatrobot {
                                          ElaConnectionStatus status,
                                          std::time_t time_stamp) {
 
-        std::time_t last_online_time = 0;
-        std::time_t last_onffine_time = 0;
-        if (status == ElaConnectionStatus_Connected) {
-            last_online_time = time_stamp;
-            std::shared_ptr<MemberInfo> member_info  = mMemberList[*friendid.get()];
-            if (member_info.get() != nullptr) {
-                last_onffine_time = member_info->mLastOffLineTimeStamp;
-            }
-
-        } else {
-            last_onffine_time = time_stamp;
-            std::shared_ptr<MemberInfo> member_info  = mMemberList[*friendid.get()];
-            if (member_info.get() != nullptr) {
-                last_online_time = member_info->mLastOnLineTimeStamp;
-            }
+        std::time_t msg_timestamp = 0;
+        std::shared_ptr<MemberInfo> member_info  = mMemberList[*friendid.get()];
+        if (member_info.get() != nullptr) {
+            msg_timestamp = member_info->mMsgTimeStamp;
         }
+
         mMemberList[*friendid.get()] = std::make_shared<MemberInfo>(
                 friendid,
                 nickname,
                 status,
-                last_online_time,
-                last_onffine_time);
+                msg_timestamp);
     }
 
     std::shared_ptr<MemberInfo>
@@ -55,19 +45,23 @@ namespace chatrobot {
     }
 
     std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>>
-    DatabaseProxy::getMessages(std::time_t offline_time_stamp) {
-        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> messages = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
-        for (int i = 0; i < mMessageList->size(); i++) {
-            std::shared_ptr<MessageInfo> message = mMessageList->at(i);
-            if (message.get() != nullptr &&
-                message->mSendTimeStamp > offline_time_stamp) {//>offline time 的所有消息
-                messages->push_back(message);
-            }
-        }
-        return messages;
+    DatabaseProxy::getMessages() {
+        return mMessageList;
     }
 
     std::map<std::string, std::shared_ptr<MemberInfo>> DatabaseProxy::getFriendList() {
         return mMemberList;
+    }
+
+    bool DatabaseProxy::removeMember(std::string friendid) {
+        std::map<std::string, std::shared_ptr<MemberInfo>>::iterator key = mMemberList.find(
+                friendid);
+        if (key != mMemberList.end()) {
+            mMemberList.erase(key);
+            return true;
+        } else {
+            Log::D(Log::TAG, "removeMember not exist, friendid:%s", friendid.c_str());
+            return false;
+        }
     }
 }

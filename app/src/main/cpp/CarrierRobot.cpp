@@ -3,6 +3,7 @@
 //
 #include <cstring>
 #include <future>
+#include <stack>
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include <Tools/Log.hpp>
@@ -99,78 +100,81 @@ namespace chatrobot {
         mDatabaseProxy->updateMemberInfo(friendid, nickanme, status, time_stamp);
         //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
         if (status == ElaConnectionStatus_Connected) {
-            relayMessagesForOnlineItem(friendid);
+            relayMessages();
         }
     }
 
-    bool CarrierRobot::relayMessagesForOnlineItem(std::shared_ptr<std::string> friend_id) {
-        std::shared_ptr<MemberInfo> member_info = mDatabaseProxy->getMemberInfo(friend_id);
-        std::time_t offline_time_stamp = member_info->mLastOffLineTimeStamp;
-        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(
-                offline_time_stamp);
-        for (int i = 0; i < message_list->size(); i++) {
-            std::shared_ptr<MessageInfo> message = message_list->at(i);
-            if (message.get() != nullptr) {
-                Json msg_json = Json::object();
-                msg_json["from"] = message->mFriendid.get()->c_str();
-                std::shared_ptr<MemberInfo> msg_member_info = mDatabaseProxy->getMemberInfo(
-                        message->mFriendid);
-                msg_json["nickname"] = msg_member_info->mNickName.get()->c_str();
-                msg_json["sendtime"] = message->mSendTimeStamp;
-                msg_json["content"] = message->mMsg.get()->c_str();
-                ela_send_friend_message(mCarrier.get(), message->mFriendid.get()->c_str(),
-                                        msg_json.dump().c_str(), msg_json.size());
-            }
-        }
-
-        return false;
-    }
-
-    bool CarrierRobot::relayMessagesToOthers(std::shared_ptr<std::string> friend_id,
-                                             std::shared_ptr<std::string> message,
-                                             std::time_t send_time) {
+    bool CarrierRobot::relayMessages() {
         std::map<std::string, std::shared_ptr<MemberInfo>> memberlist = mDatabaseProxy->getFriendList();
         std::map<std::string, std::shared_ptr<chatrobot::MemberInfo>>::iterator iter;
         for (iter = memberlist.begin(); iter != memberlist.end(); iter++) {
             std::shared_ptr<chatrobot::MemberInfo> memberInfo = iter->second;
-            if (memberInfo->mFriendid.get()->compare(*friend_id.get()) != 0
-                && memberInfo->mLastOnLineTimeStamp > memberInfo->mLastOffLineTimeStamp) {
-                Json msg_json = Json::object();
-                msg_json["from"] = friend_id.get()->c_str();
-                msg_json["nickname"] = memberInfo->mNickName.get()->c_str();
-                msg_json["sendtime"] = send_time;
-                msg_json["content"] = message.get()->c_str();
-                ela_send_friend_message(mCarrier.get(), memberInfo->mFriendid.get()->c_str(),
-                                        msg_json.dump().c_str(), msg_json.size());
+            if (memberInfo->mStatus != ElaConnectionStatus_Connected) {
+                continue;
+            }
+
+            std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages();
+            for (int i = 0; i < message_list->size(); i++) {
+                std::shared_ptr<MessageInfo> message = message_list->at(i);
+                if (message.get() != nullptr
+                    && !(*memberInfo->mFriendid.get()).compare((*message->mFriendid.get())) == 0
+                    && memberInfo->mMsgTimeStamp < message->mSendTimeStamp) {
+                    if (100+i < message_list->size()) {
+                        i+= message_list->size() - 100;
+                        Log::I(Log::TAG, "relayMessages last 100 messages, i:%d, message_list->size():%d", i, message_list->size());
+                        continue;
+                    }
+
+                    Json msg_json = Json::object();
+                    msg_json["from"] = message->mFriendid.get()->c_str();
+                    msg_json["nickname"] = memberInfo->mNickName.get()->c_str();
+                    msg_json["sendtime"] = message->mSendTimeStamp;
+                    msg_json["content"] = message->mMsg.get()->c_str();
+                    const char* ret_msg = msg_json.dump().c_str();
+                    int msg_ret = ela_send_friend_message(mCarrier.get(), memberInfo->mFriendid.get()->c_str(),
+                                                          ret_msg, strlen(ret_msg));
+                    if (msg_ret != 0) {
+                        break;
+                    }
+                    memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
+                }
             }
         }
-
         return false;
     }
 
     bool CarrierRobot::handleSpecialMessage(std::shared_ptr<std::string> friend_id,
-                                            std::shared_ptr<std::string> message) {
+                                            const std::string &message) {
         bool ret = false;
-        if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
+        //Test
+        if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0
+            && this->IsJsonIllegal(message.c_str())) {
             //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
-            Json jsonInfo = Json::parse(*message.get());
-            std::string cmd = jsonInfo['cmd'];
-            Log::I(Log::TAG, "handleSpecialMessage message: %s", message.get()->c_str());
+            Json jsonInfo = Json::parse(message);
+            std::string cmd = jsonInfo["cmd"];
+            Log::I(Log::TAG, "handleSpecialMessage message: %s", message.c_str());
             if (cmd.empty() == false) {
                 Json ret_json = Json::object();
                 Json result_json = Json::object();
                 ret_json["ack"] = cmd;
                 if (cmd.compare("del") == 0) {
-                    std::string del_userid = jsonInfo["userid"];
-                    int ela_ret = ela_remove_friend(mCarrier.get(), del_userid.c_str());
-                    if (ela_ret == 0) {
-                        result_json["code"] = 0;
-                        ret_json["result"] = result_json;
-                        ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                                ret_json.dump().c_str(), ret_json.size());
-                    } else {
-                        Log::I(Log::TAG, "handleSpecialMessage can't delete this user: %s errno:(0x%x)",
-                               del_userid.c_str(), ela_get_error());
+                    Json params = jsonInfo["params"];
+                    std::string del_userid = params[0];
+                    bool ret_del = mDatabaseProxy->removeMember(del_userid);
+                    if (ret_del == true) {
+                        int ela_ret = ela_remove_friend(mCarrier.get(), del_userid.c_str());
+                        if (ela_ret == 0) {
+                            result_json["code"] = 0;
+                            ret_json["result"] = result_json;
+                            const char* msg_str =  ret_json.dump().c_str();
+                            ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                                    msg_str, strlen(msg_str));
+                        }
+                        if (ela_ret != 0) {
+                            Log::I(Log::TAG,
+                                   "handleSpecialMessage can't delete this user: %s errno:(0x%x)",
+                                   del_userid.c_str(), ela_get_error());
+                        }
                     }
                     ret = true;
                 } else if (cmd.compare("getmemberlist") == 0) {
@@ -180,23 +184,30 @@ namespace chatrobot {
                     std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
                     for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
                         std::shared_ptr<MemberInfo> value = item->second;
+                        if ((*mCreaterFriendId.get()).compare((*value->mFriendid.get())) == 0) {
+                            continue;
+                        }
                         Json member_json = Json::object();
                         member_json["userid"] = value->mFriendid.get()->c_str();
                         member_json["nickname"] = value->mNickName.get()->c_str();
-                        "";
                         member_json["status"] = value->mStatus;
-                        member_json["online_time"] = value->mLastOnLineTimeStamp;
-                        member_json["offline_time"] = value->mLastOffLineTimeStamp;
                         data_json.push_back(member_json);
                     }
 
                     result_json["data"] = data_json;
                     ret_json["result"] = result_json;
-                    ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                            ret_json.dump().c_str(), ret_json.size());
+                    const char* ret_msg_str =  ret_json.dump().c_str();
+                    int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                            ret_msg_str, strlen(ret_msg_str));
+                    if (ela_ret != 0) {
+                        Log::I(Log::TAG,
+                               "handleSpecialMessage .c_str(): %s errno:(0x%x)",
+                               ret_msg_str, ela_get_error());
+                    }
                     ret = true;
                 } else {
-                    Log::I(Log::TAG, "handleSpecialMessage not support this command: %s", cmd.c_str());
+                    Log::I(Log::TAG, "handleSpecialMessage not support this command: %s",
+                           cmd.c_str());
                 }
             }
         }
@@ -206,12 +217,12 @@ namespace chatrobot {
     void CarrierRobot::addMessgae(std::shared_ptr<std::string> friend_id,
                                   std::shared_ptr<std::string> message, std::time_t send_time) {
 
-        bool spec_command = handleSpecialMessage(friend_id, message);
+        bool spec_command = handleSpecialMessage(friend_id, *message.get());
         if (spec_command == false) {
             //save message
             mDatabaseProxy->addMessgae(friend_id, message, send_time);
             //将该消息转发给其他人
-            relayMessagesToOthers(friend_id, message, send_time);
+            relayMessages();
         }
     }
 
@@ -333,5 +344,89 @@ namespace chatrobot {
 
         address = addr;
         return 0;
+    }
+
+    bool CarrierRobot::IsJsonIllegal(const char *jsoncontent) {
+        std::stack<char> jsonstr;
+        const char *p = jsoncontent;
+        char startChar = jsoncontent[0];
+        char endChar = '\0';
+        bool isObject = false;//防止 {}{}的判断
+        bool isArray = false;//防止[][]的判断
+
+        while (*p != '\0') {
+            endChar = *p;
+            switch (*p) {
+                case '{':
+                    if (!isObject) {
+                        isObject = true;
+                    } else if (jsonstr.empty())//对象重复入栈
+                    {
+                        return false;
+                    }
+                    jsonstr.push('{');
+                    break;
+                case '"':
+                    if (jsonstr.empty() || jsonstr.top() != '"') {
+                        jsonstr.push(*p);
+                    } else {
+                        jsonstr.pop();
+                    }
+                    break;
+                case '[':
+                    if (!isArray) {
+                        isArray = true;
+                    } else if (jsonstr.empty())//数组重复入栈
+                    {
+                        return false;
+                    }
+                    jsonstr.push('[');
+                    break;
+                case ']':
+                    if (jsonstr.empty() || jsonstr.top() != '[') {
+                        return false;
+                    } else {
+                        jsonstr.pop();
+                    }
+                    break;
+                case '}':
+                    if (jsonstr.empty() || jsonstr.top() != '{') {
+                        return false;
+                    } else {
+                        jsonstr.pop();
+                    }
+                    break;
+                case '\\'://被转义的字符,跳过
+                    p++;
+                    break;
+                default:;
+            }
+            p++;
+        }
+
+        if (jsonstr.empty()) {
+            //确保是对象或者是数组,之外的都不算有效
+            switch (startChar)//确保首尾符号对应
+            {
+                case '{': {
+                    if (endChar == '}') {
+                        return true;
+                    }
+                    return false;
+                }
+                case '[': {
+                    if (endChar == ']') {
+                        return true;
+                    }
+                    return false;
+                }
+                default:
+                    return false;
+            }
+
+            return true;
+        } else {
+            return false;
+        }
     }
 }

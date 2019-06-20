@@ -11,8 +11,7 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++14 -Wall -frtti -fexceptions -DVERSION_CODE=${rootProject.ext.versionCode}"
-                arguments "-DANDROID_STL=c++_static"
+                cppFlags "-Wall -frtti -fexceptions -DVERSION_CODE=${rootProject.ext.versionCode}"
             }
         }
         ndk {

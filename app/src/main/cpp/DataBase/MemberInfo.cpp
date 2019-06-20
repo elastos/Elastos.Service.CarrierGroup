@@ -8,10 +8,9 @@ namespace chatrobot {
     MemberInfo::MemberInfo(std::shared_ptr<std::string> friendid,
                            std::shared_ptr<std::string> nickname,
                            ElaConnectionStatus status,
-                           std::time_t last_online_time,
-                           std::time_t last_onffine_time) :
+                           std::time_t msg_timestamp):
             mFriendid(friendid), mNickName(nickname), mStatus(status),
-            mLastOnLineTimeStamp(last_online_time), mLastOffLineTimeStamp(last_onffine_time) {
+            mMsgTimeStamp(msg_timestamp) {
 
     }
 }

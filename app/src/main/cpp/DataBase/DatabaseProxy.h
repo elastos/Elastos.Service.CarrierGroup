@@ -28,11 +28,10 @@ namespace chatrobot {
         addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message,
                    std::time_t send_time);
 
-        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>>
-        getMessages(std::time_t offline_time_stamp);
+        std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> getMessages();
 
         std::map<std::string, std::shared_ptr<MemberInfo>> getFriendList();
-
+        bool removeMember(std::string friendid);
     private:
         std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> mMessageList;
