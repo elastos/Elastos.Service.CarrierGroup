@@ -4,9 +4,11 @@
 
 #include "DatabaseProxy.h"
 #include <map>
+#include <iostream>
 #include <Tools/Log.hpp>
 
 namespace chatrobot {
+    typedef std::lock_guard<std::mutex> MUTEX_LOCKER;
     DatabaseProxy::DatabaseProxy() {
         mMessageList = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
     }
@@ -20,22 +22,26 @@ namespace chatrobot {
                                          std::shared_ptr<std::string> nickname,
                                          ElaConnectionStatus status,
                                          std::time_t time_stamp) {
-
-        std::time_t msg_timestamp = 0;
         std::shared_ptr<MemberInfo> member_info = mMemberList[*friendid.get()];
+        MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         if (member_info.get() != nullptr) {
-            msg_timestamp = member_info->mMsgTimeStamp;
+            member_info->Lock();
+            member_info->mNickName = nickname;
+            member_info->mFriendid = friendid;
+            member_info->mStatus = status;
+            member_info->UnLock();
+        } else {
+            mMemberList[*friendid.get()] = std::make_shared<MemberInfo>(
+                    friendid,
+                    nickname,
+                    status,
+                    0);
         }
-
-        mMemberList[*friendid.get()] = std::make_shared<MemberInfo>(
-                friendid,
-                nickname,
-                status,
-                msg_timestamp);
     }
 
     std::shared_ptr<MemberInfo>
     DatabaseProxy::getMemberInfo(std::shared_ptr<std::string> friendid) {
+        MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         return mMemberList[*friendid.get()];
     }
 
@@ -51,6 +57,7 @@ namespace chatrobot {
 
     void DatabaseProxy::addMessgae(std::shared_ptr<std::string> friend_id,
                                    std::shared_ptr<std::string> message, std::time_t send_time) {
+
         mMessageList->push_back(std::make_shared<MessageInfo>(friend_id, message, send_time));
     }
 
@@ -60,6 +67,7 @@ namespace chatrobot {
     }
 
     std::map<std::string, std::shared_ptr<MemberInfo>> DatabaseProxy::getFriendList() {
+        MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         return mMemberList;
     }
 

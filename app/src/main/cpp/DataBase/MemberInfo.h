@@ -7,6 +7,7 @@
 
 
 #include <memory>
+#include <mutex>
 #include <ela_carrier.h>
 #include <ctime>
 
@@ -21,6 +22,10 @@ namespace chatrobot {
         ElaConnectionStatus mStatus;
         std::time_t mMsgTimeStamp;
         int mIndex;
+        void Lock();
+        void UnLock();
+    private:
+        std::recursive_mutex mMutex;
     };
 }
 

@@ -72,14 +72,18 @@ Java_com_qcode_chatrobot_MainActivity_getMemberList(JNIEnv *env, jobject jobj) {
 
     for (i = 0; i < length; i++) {
         std::shared_ptr<chatrobot::MemberInfo> memberInfo = memberlist_vector[i];
-        obj = env->NewObject(clsMemberInfo, consID);
-        env->SetObjectField(obj, mNickName,
-                            env->NewStringUTF(memberInfo.get()->mNickName.get()->c_str()));
-        env->SetObjectField(obj, mFriendId,
-                            env->NewStringUTF(memberInfo.get()->mFriendid.get()->c_str()));
-        env->SetObjectField(obj, mStatus, env->NewStringUTF(
-                memberInfo.get()->mStatus == ElaConnectionStatus_Connected ? "online" : "offline"));
-        env->SetObjectArrayElement(infos, i, obj);
+        if (memberInfo.get() != nullptr) {
+            memberInfo->Lock();
+            obj = env->NewObject(clsMemberInfo, consID);
+            env->SetObjectField(obj, mNickName,
+                                env->NewStringUTF(memberInfo.get()->mNickName.get()->c_str()));
+            env->SetObjectField(obj, mFriendId,
+                                env->NewStringUTF(memberInfo.get()->mFriendid.get()->c_str()));
+            env->SetObjectField(obj, mStatus, env->NewStringUTF(
+                    memberInfo.get()->mStatus == ElaConnectionStatus_Connected ? "online" : "offline"));
+            env->SetObjectArrayElement(infos, i, obj);
+            memberInfo->UnLock();
+        }
     }
 
     return infos;

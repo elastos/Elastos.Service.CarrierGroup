@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <mutex>
 #include "MessageInfo.h"
 #include "MemberInfo.h"
 
@@ -17,11 +18,9 @@ namespace chatrobot {
         DatabaseProxy();
 
         virtual ~DatabaseProxy();
-
         void updateMemberInfo(std::shared_ptr<std::string> friendid,
                               std::shared_ptr<std::string> nickname, ElaConnectionStatus status,
                               std::time_t time_stamp);
-
         std::shared_ptr<MemberInfo> getMemberInfo(std::shared_ptr<std::string> friendid);
         std::shared_ptr<MemberInfo> getMemberInfo(int index);
         void
@@ -33,6 +32,7 @@ namespace chatrobot {
         std::map<std::string, std::shared_ptr<MemberInfo>> getFriendList();
         bool removeMember(std::string friendid);
     private:
+        std::mutex _SyncedMemberList;
         std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> mMessageList;
     };

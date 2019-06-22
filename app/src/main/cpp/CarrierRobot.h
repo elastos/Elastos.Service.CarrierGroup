@@ -45,10 +45,9 @@ namespace chatrobot {
         static CarrierRobot* instance;
         CarrierRobot();
         std::time_t getTimeStamp();
-        std::time_t convertStringToDatetime(std::string str);
-        std::string convertDatetimeToString(time_t time);
         bool handleSpecialMessage(std::shared_ptr<std::string> friend_id,
                                   const std::string& message);
+        std::string convertDatetimeToString(std::time_t time);
         bool IsJsonIllegal(const char *jsoncontent);
         bool relayMessages();
         std::shared_ptr<std::string> mCreaterFriendId;
