@@ -130,11 +130,16 @@ namespace chatrobot {
                                message_list->size());
                         continue;
                     }
-
                     char msg[1024];
-                    sprintf(msg, "%s: \n%s \n[%s]", memberInfo->mNickName.get()->c_str(),
-                            message->mMsg.get()->c_str(),
-                            this->convertDatetimeToString(message->mSendTimeStamp).c_str());
+                    std::shared_ptr<chatrobot::MemberInfo> target_memberInfo = mDatabaseProxy->getMemberInfo(message->mFriendid);
+                    if (target_memberInfo.get() != nullptr) {
+                        target_memberInfo->Lock();
+                        sprintf(msg, "%s: %s \n[%s]", target_memberInfo->mNickName.get()->c_str(),
+                                message->mMsg.get()->c_str(),
+                                this->convertDatetimeToString(message->mSendTimeStamp).c_str());
+                        target_memberInfo->UnLock();
+                    }
+
                     int msg_ret = ela_send_friend_message(mCarrier.get(),
                                                           memberInfo->mFriendid.get()->c_str(),
                                                           msg, strlen(msg));
@@ -158,26 +163,27 @@ namespace chatrobot {
         if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
             //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
             if (message.find("/list") == 0) {
-                Json data = Json::object();
-                Json data_json = Json::array();
                 std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
                 std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
                 std::string ret_msg_str = "";
                 for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
                     std::shared_ptr<MemberInfo> memberInfo = item->second;
                     memberInfo->Lock();
-                    if ((*mCreaterFriendId.get()).compare((*memberInfo->mFriendid.get())) == 0) {
-                        memberInfo->UnLock();
-                        continue;
-                    }
+                    /* if ((*mCreaterFriendId.get()).compare((*memberInfo->mFriendid.get())) == 0) {
+                         memberInfo->UnLock();
+                         continue;
+                     }*/
                     ret_msg_str += std::string(
-                            std::to_string(memberInfo->mIndex) + ": " + (*memberInfo->mNickName.get()) + " " +
-                            std::to_string(memberInfo->mStatus) + "\n");
-                    memberInfo->UnLock();
+                            std::to_string(memberInfo->mIndex) + ": " +
+                            (*memberInfo->mNickName.get()) + " " +
+                            std::string(memberInfo->mStatus == 0 ? "online" : "offline") + "\n");
+                    memberInfo->UnLock();//同名还没处理
                 }
+
+                const char *ret_msg = ret_msg_str.c_str();
                 int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                                      ret_msg_str.c_str(),
-                                                      strlen(ret_msg_str.c_str()));
+                                                      ret_msg,
+                                                      strlen(ret_msg));
                 if (ela_ret != 0) {
                     Log::I(Log::TAG,
                            "handleSpecialMessage .c_str(): %s errno:(0x%x)",
