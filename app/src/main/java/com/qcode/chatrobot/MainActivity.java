@@ -67,6 +67,7 @@ public class MainActivity extends Activity {
     
         mAdapter = new MemberListAdapter(this.getLayoutInflater());
         mMemberListView.setAdapter(mAdapter);
+        mMemberListView.requestFocus();
         updateMemberList();
     }
     void updateMemberList() {

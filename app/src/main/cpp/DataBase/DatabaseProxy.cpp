@@ -22,7 +22,7 @@ namespace chatrobot {
                                          std::time_t time_stamp) {
 
         std::time_t msg_timestamp = 0;
-        std::shared_ptr<MemberInfo> member_info  = mMemberList[*friendid.get()];
+        std::shared_ptr<MemberInfo> member_info = mMemberList[*friendid.get()];
         if (member_info.get() != nullptr) {
             msg_timestamp = member_info->mMsgTimeStamp;
         }
@@ -36,7 +36,17 @@ namespace chatrobot {
 
     std::shared_ptr<MemberInfo>
     DatabaseProxy::getMemberInfo(std::shared_ptr<std::string> friendid) {
-        return  mMemberList[*friendid.get()];
+        return mMemberList[*friendid.get()];
+    }
+
+    std::shared_ptr<MemberInfo> DatabaseProxy::getMemberInfo(int index) {
+        for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
+            auto value = item->second;
+            if (value->mIndex == index) {
+                return value;
+            }
+        }
+        return std::shared_ptr<MemberInfo>(nullptr);
     }
 
     void DatabaseProxy::addMessgae(std::shared_ptr<std::string> friend_id,

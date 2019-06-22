@@ -4,6 +4,11 @@
 #include <cstring>
 #include <future>
 #include <stack>
+#include <iostream>
+#include <ctime>
+
+using namespace std;
+
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include <Tools/Log.hpp>
@@ -74,6 +79,61 @@ namespace chatrobot {
         return tp.time_since_epoch().count();
     }
 
+    std::time_t CarrierRobot::convertStringToDatetime(std::string str) {
+        char *cha = (char *) str.data();             // 将string转换成char*。
+        tm tm_;                                    // 定义tm结构体。
+        int year, month, day, hour, minute, second;// 定义时间的各个int临时变量。
+        sscanf(cha, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute,
+               &second);// 将string存储的日期时间，转换为int临时变量。
+        tm_.tm_year =
+                year - 1900;                 // 年，由于tm结构体存储的是从1900年开始的时间，所以tm_year为int临时变量减去1900。
+        tm_.tm_mon = month - 1;                    // 月，由于tm结构体的月份存储范围为0-11，所以tm_mon为int临时变量减去1。
+        tm_.tm_mday = day;                         // 日。
+        tm_.tm_hour = hour;                        // 时。
+        tm_.tm_min = minute;                       // 分。
+        tm_.tm_sec = second;                       // 秒。
+        tm_.tm_isdst = 0;                          // 非夏令时。
+        std::time_t t_ = mktime(&tm_);                  // 将tm结构体转换成time_t格式。
+        return t_;                                 // 返回值。
+    }
+
+    std::string CarrierRobot::convertDatetimeToString(std::time_t time) {
+        tm *tm_ = localtime(&time);                // 将time_t格式转换为tm结构体
+        int year, month, day, hour, minute, second;// 定义时间的各个int临时变量。
+        year = tm_->tm_year +
+               1900;                // 临时变量，年，由于tm结构体存储的是从1900年开始的时间，所以临时变量int为tm_year加上1900。
+        month = tm_->tm_mon +
+                1;                   // 临时变量，月，由于tm结构体的月份存储范围为0-11，所以临时变量int为tm_mon加上1。
+        day = tm_->tm_mday;                        // 临时变量，日。
+        hour = tm_->tm_hour;                       // 临时变量，时。
+        minute = tm_->tm_min;                      // 临时变量，分。
+        second = tm_->tm_sec;                      // 临时变量，秒。
+        char yearStr[5], monthStr[3], dayStr[3], hourStr[3], minuteStr[3], secondStr[3];// 定义时间的各个char*变量。
+        sprintf(yearStr, "%d", year);              // 年。
+        sprintf(monthStr, "%d", month);            // 月。
+        sprintf(dayStr, "%d", day);                // 日。
+        sprintf(hourStr, "%d", hour);              // 时。
+        sprintf(minuteStr, "%d", minute);          // 分。
+        if (minuteStr[1] == '\0')                  // 如果分为一位，如5，则需要转换字符串为两位，如05。
+        {
+            minuteStr[2] = '\0';
+            minuteStr[1] = minuteStr[0];
+            minuteStr[0] = '0';
+        }
+        sprintf(secondStr, "%d", second);          // 秒。
+        if (secondStr[1] == '\0')                  // 如果秒为一位，如5，则需要转换字符串为两位，如05。
+        {
+            secondStr[2] = '\0';
+            secondStr[1] = secondStr[0];
+            secondStr[0] = '0';
+        }
+        char s[20];                                // 定义总日期时间char*变量。
+        sprintf(s, "%s-%s-%s %s:%s:%s", yearStr, monthStr, dayStr, hourStr, minuteStr,
+                secondStr);// 将年月日时分秒合并。
+        std::string str(s);                             // 定义string变量，并将总日期时间char*变量作为构造函数的参数传入。
+        return str;                                // 返回转换日期时间后的string变量。
+    }
+
     void CarrierRobot::OnCarrierFriendConnection(ElaCarrier *carrier, const char *friendid,
                                                  ElaConnectionStatus status, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendConnection from: %s %d", friendid, status);
@@ -117,25 +177,26 @@ namespace chatrobot {
             for (int i = 0; i < message_list->size(); i++) {
                 std::shared_ptr<MessageInfo> message = message_list->at(i);
                 if (message.get() != nullptr
-                    && !(*memberInfo->mFriendid.get()).compare((*message->mFriendid.get())) == 0
+                    && (*memberInfo->mFriendid.get()).compare((*message->mFriendid.get())) != 0
                     && memberInfo->mMsgTimeStamp < message->mSendTimeStamp) {
-                    if (100+i < message_list->size()) {
-                        i+= message_list->size() - 100;
-                        Log::I(Log::TAG, "relayMessages last 100 messages, i:%d, message_list->size():%d", i, message_list->size());
+                    if (100 + i < message_list->size()) {
+                        i += message_list->size() - 100;
+                        Log::I(Log::TAG,
+                               "relayMessages last 100 messages, i:%d, message_list->size():%d", i,
+                               message_list->size());
                         continue;
                     }
 
-                    Json msg_json = Json::object();
-                    msg_json["from"] = message->mFriendid.get()->c_str();
-                    msg_json["nickname"] = memberInfo->mNickName.get()->c_str();
-                    msg_json["sendtime"] = message->mSendTimeStamp;
-                    msg_json["content"] = message->mMsg.get()->c_str();
-                    const char* ret_msg = msg_json.dump().c_str();
-                    int msg_ret = ela_send_friend_message(mCarrier.get(), memberInfo->mFriendid.get()->c_str(),
-                                                          ret_msg, strlen(ret_msg));
+                    char msg[1024];
+                    sprintf(msg, "%s %s %s", memberInfo->mNickName.get()->c_str(), message->mMsg.get()->c_str(),
+                            this->convertDatetimeToString(message->mSendTimeStamp).c_str());
+                    int msg_ret = ela_send_friend_message(mCarrier.get(),
+                                                          memberInfo->mFriendid.get()->c_str(),
+                                                          msg, strlen(msg));
                     if (msg_ret != 0) {
                         break;
                     }
+
                     memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
                 }
             }
@@ -147,68 +208,57 @@ namespace chatrobot {
                                             const std::string &message) {
         bool ret = false;
         //Test
-        if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0
-            && this->IsJsonIllegal(message.c_str())) {
+        if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
             //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
-            Json jsonInfo = Json::parse(message);
-            std::string cmd = jsonInfo["cmd"];
-            Log::I(Log::TAG, "handleSpecialMessage message: %s", message.c_str());
-            if (cmd.empty() == false) {
-                Json ret_json = Json::object();
-                Json result_json = Json::object();
-                ret_json["ack"] = cmd;
-                if (cmd.compare("del") == 0) {
-                    Json params = jsonInfo["params"];
-                    std::string del_userid = params[0];
-                    bool ret_del = mDatabaseProxy->removeMember(del_userid);
-                    if (ret_del == true) {
-                        int ela_ret = ela_remove_friend(mCarrier.get(), del_userid.c_str());
-                        if (ela_ret == 0) {
-                            result_json["code"] = 0;
-                            ret_json["result"] = result_json;
-                            const char* msg_str =  ret_json.dump().c_str();
-                            ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                                    msg_str, strlen(msg_str));
-                        }
-                        if (ela_ret != 0) {
-                            Log::I(Log::TAG,
-                                   "handleSpecialMessage can't delete this user: %s errno:(0x%x)",
-                                   del_userid.c_str(), ela_get_error());
-                        }
+            if (message.find("/list") == 0) {
+                Json data_json = Json::array();
+                std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
+                std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+                for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
+                    std::shared_ptr<MemberInfo> value = item->second;
+                    if ((*mCreaterFriendId.get()).compare((*value->mFriendid.get())) == 0) {
+                        continue;
                     }
-                    ret = true;
-                } else if (cmd.compare("getmemberlist") == 0) {
-                    result_json["code"] = 0;
-                    Json data_json = Json::array();
-                    std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
-                    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
-                    for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
-                        std::shared_ptr<MemberInfo> value = item->second;
-                        if ((*mCreaterFriendId.get()).compare((*value->mFriendid.get())) == 0) {
-                            continue;
-                        }
-                        Json member_json = Json::object();
-                        member_json["userid"] = value->mFriendid.get()->c_str();
-                        member_json["nickname"] = value->mNickName.get()->c_str();
-                        member_json["status"] = value->mStatus;
-                        data_json.push_back(member_json);
-                    }
-
-                    result_json["data"] = data_json;
-                    ret_json["result"] = result_json;
-                    const char* ret_msg_str =  ret_json.dump().c_str();
-                    int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                            ret_msg_str, strlen(ret_msg_str));
+                    char msg_info[256];
+                    sprintf(msg_info, "%d %s %d", value->mIndex, value->mNickName.get()->c_str(), value->mStatus);
+                    data_json.push_back(std::string(msg_info));
+                }
+                const char *ret_msg_str = data_json.dump().c_str();
+                int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                                      ret_msg_str, strlen(ret_msg_str));
+                if (ela_ret != 0) {
+                    Log::I(Log::TAG,
+                           "handleSpecialMessage .c_str(): %s errno:(0x%x)",
+                           ret_msg_str, ela_get_error());
+                }
+                ret = true;
+            } else if (message.find("/del") == 0) {
+                std::string del_userindex = message.substr(4, message.length() - 4);
+                int user_num = std::atoi(del_userindex.c_str());
+                std::shared_ptr<MemberInfo> memberInfo = mDatabaseProxy->getMemberInfo(user_num);
+                char msg_str[256];
+                if (memberInfo.get() != nullptr) {
+                    mDatabaseProxy->removeMember(*memberInfo->mFriendid.get());
+                    int ela_ret = ela_remove_friend(mCarrier.get(),
+                                                    memberInfo->mFriendid.get()->c_str());
+                    sprintf(msg_str, "%s has been kicked out!", memberInfo->mNickName.get()->c_str());
                     if (ela_ret != 0) {
                         Log::I(Log::TAG,
-                               "handleSpecialMessage .c_str(): %s errno:(0x%x)",
-                               ret_msg_str, ela_get_error());
+                               "handleSpecialMessage can't delete this user: %s errno:(0x%x)",
+                               memberInfo->mFriendid.get()->c_str(), ela_get_error());
                     }
-                    ret = true;
                 } else {
-                    Log::I(Log::TAG, "handleSpecialMessage not support this command: %s",
-                           cmd.c_str());
+                    sprintf(msg_str, "num %s member not exist!", del_userindex.c_str());
                 }
+
+                ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                        msg_str, strlen(msg_str));
+                ret = true;
+            } else if (message.find("/help") == 0) {
+                const char* msg_str = "/list list the members \n /del delete the member, format:del member number\n";
+                ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                        msg_str, strlen(msg_str));
+                ret = true;
             }
         }
         return ret;

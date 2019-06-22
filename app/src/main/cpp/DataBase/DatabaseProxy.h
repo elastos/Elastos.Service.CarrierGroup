@@ -23,7 +23,7 @@ namespace chatrobot {
                               std::time_t time_stamp);
 
         std::shared_ptr<MemberInfo> getMemberInfo(std::shared_ptr<std::string> friendid);
-
+        std::shared_ptr<MemberInfo> getMemberInfo(int index);
         void
         addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message,
                    std::time_t send_time);

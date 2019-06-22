@@ -11,13 +11,16 @@
 #include <ctime>
 
 namespace chatrobot {
+
     class MemberInfo {
     public:
-        MemberInfo(std::shared_ptr<std::string>, std::shared_ptr<std::string>, ElaConnectionStatus, std::time_t msg_timestamp);
+        static int sMemberCount;
+        MemberInfo(std::shared_ptr<std::string>, std::shared_ptr<std::string>,  ElaConnectionStatus, std::time_t msg_timestamp);
         std::shared_ptr<std::string> mFriendid;
         std::shared_ptr<std::string> mNickName;
         ElaConnectionStatus mStatus;
         std::time_t mMsgTimeStamp;
+        int mIndex;
     };
 }
 
