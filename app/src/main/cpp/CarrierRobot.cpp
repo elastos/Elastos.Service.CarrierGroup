@@ -99,7 +99,6 @@ namespace chatrobot {
         } else {
             nickanme = std::make_shared<std::string>("");
         }
-
         mDatabaseProxy->updateMemberInfo(friendid, nickanme, status, time_stamp);
         //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
         if (status == ElaConnectionStatus_Connected) {
@@ -160,37 +159,38 @@ namespace chatrobot {
                                             const std::string &message) {
         bool ret = false;
         //Test
-        if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
-            //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
-            if (message.find("/list") == 0) {
-                std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
-                std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
-                std::string ret_msg_str = "";
-                for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
-                    std::shared_ptr<MemberInfo> memberInfo = item->second;
-                    memberInfo->Lock();
-                    /* if ((*mCreaterFriendId.get()).compare((*memberInfo->mFriendid.get())) == 0) {
-                         memberInfo->UnLock();
-                         continue;
-                     }*/
-                    ret_msg_str += std::string(
-                            std::to_string(memberInfo->mIndex) + ": " +
-                            (*memberInfo->mNickName.get()) + " " +
-                            std::string(memberInfo->mStatus == 0 ? "online" : "offline") + "\n");
-                    memberInfo->UnLock();//同名还没处理
-                }
+        if (message.find("/list") == 0) {
+            std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
+            std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+            std::string ret_msg_str = "";
+            for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
+                std::shared_ptr<MemberInfo> memberInfo = item->second;
+                memberInfo->Lock();
+                ret_msg_str += std::string(
+                        std::to_string(memberInfo->mIndex) + ": " +
+                        (*memberInfo->mNickName.get()) + " " +
+                        std::string(memberInfo->mStatus == 0 ? "online" : "offline") + "\n");
+                memberInfo->UnLock();//同名还没处理
+            }
 
-                const char *ret_msg = ret_msg_str.c_str();
-                int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                                      ret_msg,
-                                                      strlen(ret_msg));
-                if (ela_ret != 0) {
-                    Log::I(Log::TAG,
-                           "handleSpecialMessage .c_str(): %s errno:(0x%x)",
-                           ret_msg_str.c_str(), ela_get_error());
-                }
-                ret = true;
-            } else if (message.find("/del") == 0) {
+            const char *ret_msg = ret_msg_str.c_str();
+            int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                                  ret_msg,
+                                                  strlen(ret_msg));
+            if (ela_ret != 0) {
+                Log::I(Log::TAG,
+                       "handleSpecialMessage .c_str(): %s errno:(0x%x)",
+                       ret_msg_str.c_str(), ela_get_error());
+            }
+            ret = true;
+        } else if (message.find("/help") == 0) {
+            const char *msg_str = "/list list the members \n/del delete the member, format:del number";
+            ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
+                                    msg_str, strlen(msg_str));
+            ret = true;
+        } else if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
+            //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
+            if (message.find("/del") == 0) {
                 std::string del_userindex = message.substr(4, message.length() - 4);
                 int user_num = std::atoi(del_userindex.c_str());
                 std::shared_ptr<MemberInfo> memberInfo = mDatabaseProxy->getMemberInfo(user_num);
@@ -212,11 +212,6 @@ namespace chatrobot {
                     sprintf(msg_str, "num %s member not exist!", del_userindex.c_str());
                 }
 
-                ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                        msg_str, strlen(msg_str));
-                ret = true;
-            } else if (message.find("/help") == 0) {
-                const char *msg_str = "/list list the members \n/del delete the member, format:del member number";
                 ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
                                         msg_str, strlen(msg_str));
                 ret = true;

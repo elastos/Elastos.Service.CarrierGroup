@@ -22,6 +22,7 @@ namespace chatrobot {
         ElaConnectionStatus mStatus;
         std::time_t mMsgTimeStamp;
         int mIndex;
+        bool mIsManager;
         void Lock();
         void UnLock();
     private:
