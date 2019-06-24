@@ -26,7 +26,9 @@ namespace chatrobot {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         if (member_info.get() != nullptr) {
             member_info->Lock();
-            member_info->mNickName = nickname;
+            if (!nickname->empty()) {
+                member_info->mNickName = nickname;
+            }
             member_info->mFriendid = friendid;
             member_info->mStatus = status;
             member_info->UnLock();
