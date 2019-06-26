@@ -35,9 +35,12 @@ namespace chatrobot {
 
         static void OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
                                                   const void *msg, size_t len, void *context);
+
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
+        static void OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
+                                                     const ElaFriendInfo *info, void *context);
         void runCarrier();
-        void updateMemberInfo(std::shared_ptr<std::string> friendid, ElaConnectionStatus status,
+        void updateMemberInfo(std::shared_ptr<std::string> friendid, std::shared_ptr<std::string> nick_name, ElaConnectionStatus status,
                               std::time_t time_stamp);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>getFriendList();

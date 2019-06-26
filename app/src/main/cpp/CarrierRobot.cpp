@@ -56,6 +56,13 @@ namespace chatrobot {
             return;
         }
     }
+    void CarrierRobot::OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
+                                                  const ElaFriendInfo *info, void *context) {
+        auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
+        std::shared_ptr<std::string> nickanme = std::make_shared<std::string>(info->user_info.name);
+        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme, ElaConnectionStatus_Connected,
+                                        carrier_robot->getTimeStamp());
+    }
 
     void CarrierRobot::OnCarrierConnection(ElaCarrier *carrier,
                                            ElaConnectionStatus status, void *context) {
@@ -81,24 +88,26 @@ namespace chatrobot {
                                                  ElaConnectionStatus status, void *context) {
         Log::I(Log::TAG, "OnCarrierFriendConnection from: %s %d", friendid, status);
         auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
-        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), status,
-                                        carrier_robot->getTimeStamp());
-    }
-
-    void CarrierRobot::updateMemberInfo(std::shared_ptr<std::string> friendid,
-                                        ElaConnectionStatus status,
-                                        std::time_t time_stamp) {
-        if (mCreaterFriendId.get() == nullptr) {
-            mCreaterFriendId = friendid;
-        }
         ElaFriendInfo info;
-        int ret = ela_get_friend_info(mCarrier.get(), friendid.get()->c_str(), &info);
+        int ret = ela_get_friend_info(carrier, friendid, &info);
         std::shared_ptr<std::string> nickanme;
         if (ret == 0) {
             nickanme = std::make_shared<std::string>(info.user_info.name);
         } else {
             nickanme = std::make_shared<std::string>("");
         }
+        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme, status,
+                                        carrier_robot->getTimeStamp());
+    }
+
+    void CarrierRobot::updateMemberInfo(std::shared_ptr<std::string> friendid,
+                                        std::shared_ptr<std::string> nickanme,
+                                        ElaConnectionStatus status,
+                                        std::time_t time_stamp) {
+        if (mCreaterFriendId.get() == nullptr) {
+            mCreaterFriendId = friendid;
+        }
+
         mDatabaseProxy->updateMemberInfo(friendid, nickanme, status, time_stamp);
         //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
         if (status == ElaConnectionStatus_Connected) {
@@ -116,6 +125,7 @@ namespace chatrobot {
                 memberInfo->UnLock();
                 continue;
             }
+
             std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages();
             for (int i = 0; i < message_list->size(); i++) {
                 std::shared_ptr<MessageInfo> message = message_list->at(i);
@@ -268,7 +278,7 @@ namespace chatrobot {
         carrierCallbacks.friend_request = OnCarrierFriendRequest;
         carrierCallbacks.friend_connection = OnCarrierFriendConnection;
         carrierCallbacks.friend_message = OnCarrierFriendMessage;
-
+        carrierCallbacks.friend_info = OnCarrierFriendInfoChanged;
         carrierOpts.udp_enabled = mCarrierConfig->mEnableUdp;
         carrierOpts.persistent_location = data_dir;
 
