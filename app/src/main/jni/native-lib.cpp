@@ -14,7 +14,6 @@ Java_com_qcode_chatrobot_MainActivity_getAddress(
     chatrobot::CarrierRobot *carrier_robot = chatrobot::CarrierRobot::getInstance();
     std::string address;
     int status = carrier_robot->getAddress(address);
-
     return env->NewStringUTF(address.c_str());
 
 } ;
@@ -80,7 +79,7 @@ Java_com_qcode_chatrobot_MainActivity_getMemberList(JNIEnv *env, jobject jobj) {
             env->SetObjectField(obj, mFriendId,
                                 env->NewStringUTF(memberInfo.get()->mFriendid.get()->c_str()));
             env->SetObjectField(obj, mStatus, env->NewStringUTF(
-                    memberInfo.get()->mStatus == ElaConnectionStatus_Connected ? "online" : "offline"));
+                    memberInfo.get()->mStatus == 0 ? "online" : "offline"));
             env->SetObjectArrayElement(infos, i, obj);
             memberInfo->UnLock();
         }

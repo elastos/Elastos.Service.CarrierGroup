@@ -16,6 +16,7 @@ class MessageInfo {
 namespace chatrobot {
     class MessageInfo {
     public:
+        MessageInfo();
         MessageInfo(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
         std::shared_ptr<std::string> mFriendid;
         std::shared_ptr<std::string> mMsg;

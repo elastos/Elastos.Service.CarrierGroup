@@ -56,12 +56,13 @@ namespace chatrobot {
             return;
         }
     }
+
     void CarrierRobot::OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
                                                   const ElaFriendInfo *info, void *context) {
         auto carrier_robot = reinterpret_cast<CarrierRobot *>(context);
         std::shared_ptr<std::string> nickanme = std::make_shared<std::string>(info->user_info.name);
-        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme, ElaConnectionStatus_Connected,
-                                        carrier_robot->getTimeStamp());
+        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme,
+                                        ElaConnectionStatus_Connected);
     }
 
     void CarrierRobot::OnCarrierConnection(ElaCarrier *carrier,
@@ -80,6 +81,7 @@ namespace chatrobot {
         ela_accept_friend(carrier, friendid);
     }
 
+
     std::time_t CarrierRobot::getTimeStamp() {
         return time(0);
     }
@@ -96,19 +98,18 @@ namespace chatrobot {
         } else {
             nickanme = std::make_shared<std::string>("");
         }
-        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme, status,
-                                        carrier_robot->getTimeStamp());
+        carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme, status);
     }
 
     void CarrierRobot::updateMemberInfo(std::shared_ptr<std::string> friendid,
-                                        std::shared_ptr<std::string> nickanme,
-                                        ElaConnectionStatus status,
-                                        std::time_t time_stamp) {
+                                        std::shared_ptr<std::string> nickname,
+                                        ElaConnectionStatus status) {
         if (mCreaterFriendId.get() == nullptr) {
             mCreaterFriendId = friendid;
         }
-
-        mDatabaseProxy->updateMemberInfo(friendid, nickanme, status, time_stamp);
+        std::shared_ptr<chatrobot::MemberInfo> memberinfo = std::make_shared<chatrobot::MemberInfo>(
+                friendid, nickname, status == ElaConnectionStatus_Connected ? 0 : 1, 0);
+        mDatabaseProxy->updateMemberInfo(memberinfo);
         //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
         if (status == ElaConnectionStatus_Connected) {
             relayMessages();
@@ -116,51 +117,56 @@ namespace chatrobot {
     }
 
     bool CarrierRobot::relayMessages() {
+        MUTEX_LOCKER locker_sync_data(_mReplyMessage);
         std::map<std::string, std::shared_ptr<MemberInfo>> memberlist = mDatabaseProxy->getFriendList();
         std::map<std::string, std::shared_ptr<chatrobot::MemberInfo>>::iterator iter;
         for (iter = memberlist.begin(); iter != memberlist.end(); iter++) {
             std::shared_ptr<chatrobot::MemberInfo> memberInfo = iter->second;
+            if (memberInfo.get() == nullptr) {
+                continue;
+            }
+            bool info_changed = false;
             memberInfo->Lock();
-            if (memberInfo->mStatus != ElaConnectionStatus_Connected) {
+            if (memberInfo->mStatus != 0) {
                 memberInfo->UnLock();
                 continue;
             }
 
-            std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages();
-            for (int i = 0; i < message_list->size(); i++) {
-                std::shared_ptr<MessageInfo> message = message_list->at(i);
-                if (message.get() != nullptr
-                    && (*memberInfo->mFriendid.get()).compare((*message->mFriendid.get())) != 0
-                    && memberInfo->mMsgTimeStamp < message->mSendTimeStamp) {
-                    if (100 + i < message_list->size()) {
-                        i += message_list->size() - 100;
-                        Log::I(Log::TAG,
-                               "relayMessages last 100 messages, i:%d, message_list->size():%d", i,
-                               message_list->size());
-                        continue;
-                    }
-                    char msg[1024];
-                    std::shared_ptr<chatrobot::MemberInfo> target_memberInfo = mDatabaseProxy->getMemberInfo(message->mFriendid);
-                    if (target_memberInfo.get() != nullptr) {
-                        target_memberInfo->Lock();
-                        sprintf(msg, "%s: %s \n[%s]", target_memberInfo->mNickName.get()->c_str(),
-                                message->mMsg.get()->c_str(),
-                                this->convertDatetimeToString(message->mSendTimeStamp).c_str());
-                        target_memberInfo->UnLock();
+            std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(
+                    memberInfo->mFriendid, memberInfo->mMsgTimeStamp, 100);
+            if (message_list.get() != nullptr) {
+                for (int i = 0; i < message_list->size(); i++) {
+                    std::shared_ptr<MessageInfo> message = message_list->at(i);
+                    if (message.get() != nullptr) {
+                        char msg[1024];
+                        std::shared_ptr<chatrobot::MemberInfo> target_memberInfo = mDatabaseProxy->getMemberInfo(
+                                message->mFriendid);
+                        if (target_memberInfo.get() != nullptr) {
+                            target_memberInfo->Lock();
+                            sprintf(msg, "%s: %s \n[%s]",
+                                    target_memberInfo->mNickName.get()->c_str(),
+                                    message->mMsg.get()->c_str(),
+                                    this->convertDatetimeToString(message->mSendTimeStamp).c_str());
+                            target_memberInfo->UnLock();
+                        }
+
+                        int msg_ret = ela_send_friend_message(mCarrier.get(),
+                                                              memberInfo->mFriendid.get()->c_str(),
+                                                              msg, strlen(msg));
+                        if (msg_ret != 0) {
+                            break;
+                        }
+                        info_changed = true;
+                        memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
                     }
 
-                    int msg_ret = ela_send_friend_message(mCarrier.get(),
-                                                          memberInfo->mFriendid.get()->c_str(),
-                                                          msg, strlen(msg));
-                    if (msg_ret != 0) {
-                        break;
-                    }
-
-                    memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
                 }
-
             }
             memberInfo->UnLock();
+            if (info_changed) {
+                mDatabaseProxy->updateMemberInfo(memberInfo);
+            }
+
         }
         return false;
     }
@@ -271,7 +277,7 @@ namespace chatrobot {
     int CarrierRobot::start(const char *data_dir) {
         ElaOptions carrierOpts;
         ElaCallbacks carrierCallbacks;
-
+        mDatabaseProxy->startDb(data_dir);
         memset(&carrierOpts, 0, sizeof(carrierOpts));
         memset(&carrierCallbacks, 0, sizeof(carrierCallbacks));
         carrierCallbacks.connection_status = OnCarrierConnection;
@@ -296,19 +302,6 @@ namespace chatrobot {
         }
         carrierOpts.bootstraps_size = carrierNodeSize;
         carrierOpts.bootstraps = carrierNodeArray;
-
-        // set HiveBootstrapNode
-        /* size_t hiveNodeSize = mCarrierConfig->mHiveNodes.size();
-         HiveBootstrapNode hiveNodeArray[hiveNodeSize];
-         memset(hiveNodeArray, 0, sizeof(hiveNodeArray));
-         for(int idx = 0; idx < hiveNodeSize; idx++) {
-             const auto& node = mCarrierConfig->mHiveNodes[idx];
-             hiveNodeArray[idx].ipv4 = node.mIpv4.c_str();
-             hiveNodeArray[idx].port = node.mPort.c_str();
-         }*/
-        //carrierOpts.hive_bootstraps_size = hiveNodeSize;
-        //carrierOpts.hive_bootstraps = hiveNodeArray;
-
         ela_log_init(static_cast<ElaLogLevel>(mCarrierConfig->mLogLevel), nullptr, nullptr);
 
         auto creater = [&]() -> ElaCarrier * {
@@ -333,8 +326,6 @@ namespace chatrobot {
             Log::E(Log::TAG, "CarrierRobot::start failed! ret=%s(0x%x)", strerr_buf, err);
             return ErrCode::FailedCarrier;
         }
-        //runCarrier();
-        //std::async(std::bind(&CarrierRobot::runCarrier, this));
         return 0;
     }
 

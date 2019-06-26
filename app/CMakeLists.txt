@@ -52,6 +52,7 @@ target_link_libraries(chatrobot
                       "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libcrystal.so"
                       "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libelacarrier.so"
                       "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libelafiletrans.so"
-                      "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libelasession.so")
+                      "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libelasession.so"
+                      "${PROJECT_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/libsqlite3.a")
 
 

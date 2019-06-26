@@ -29,7 +29,8 @@ namespace chatrobot {
         static void OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,
                                                   const ElaUserInfo *info,
                                                   const char *hello, void *context);
-
+        static void OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
+                                               const ElaFriendInfo *info, void *context);
         static void OnCarrierFriendConnection(ElaCarrier *carrier,const char *friendid,
                                                      ElaConnectionStatus status, void *context);
 
@@ -37,11 +38,9 @@ namespace chatrobot {
                                                   const void *msg, size_t len, void *context);
 
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
-        static void OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
-                                                     const ElaFriendInfo *info, void *context);
         void runCarrier();
-        void updateMemberInfo(std::shared_ptr<std::string> friendid, std::shared_ptr<std::string> nick_name, ElaConnectionStatus status,
-                              std::time_t time_stamp);
+        void updateMemberInfo(std::shared_ptr<std::string> friendid, std::shared_ptr<std::string> nickname,
+                              ElaConnectionStatus status);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>getFriendList();
     private:
@@ -53,6 +52,7 @@ namespace chatrobot {
         std::string convertDatetimeToString(std::time_t time);
         bool IsJsonIllegal(const char *jsoncontent);
         bool relayMessages();
+        std::mutex _mReplyMessage;
         std::shared_ptr<std::string> mCreaterFriendId;
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;

@@ -16,10 +16,10 @@ namespace chatrobot {
     class MemberInfo {
     public:
         static int sMemberCount;
-        MemberInfo(std::shared_ptr<std::string>, std::shared_ptr<std::string>,  ElaConnectionStatus, std::time_t msg_timestamp);
+        MemberInfo(std::shared_ptr<std::string>, std::shared_ptr<std::string>,  int status, std::time_t msg_timestamp);
         std::shared_ptr<std::string> mFriendid;
         std::shared_ptr<std::string> mNickName;
-        ElaConnectionStatus mStatus;
+        int mStatus;
         std::time_t mMsgTimeStamp;
         int mIndex;
         bool mIsManager;
