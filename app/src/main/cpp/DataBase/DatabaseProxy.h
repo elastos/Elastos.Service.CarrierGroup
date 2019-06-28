@@ -9,6 +9,7 @@
 #include <map>
 #include <vector>
 #include <mutex>
+#include <regex>
 #include <sqlite3.h>
 #include "MessageInfo.h"
 #include "MemberInfo.h"
@@ -55,7 +56,7 @@ namespace chatrobot {
         sqlite3 *mDb;
         std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> mMessageList;
-
+        std::shared_ptr<std::regex> mMsgReg;
         void syncMemberList();
 
         static int callback(void *context, int argc, char **argv, char **azColName);

@@ -50,7 +50,6 @@ namespace chatrobot {
         bool handleSpecialMessage(std::shared_ptr<std::string> friend_id,
                                   const std::string& message);
         std::string convertDatetimeToString(std::time_t time);
-        bool IsJsonIllegal(const char *jsoncontent);
         bool relayMessages();
         std::mutex _mReplyMessage;
         std::shared_ptr<std::string> mCreaterFriendId;

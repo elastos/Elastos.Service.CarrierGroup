@@ -10,6 +10,9 @@
 namespace chatrobot {
     DatabaseProxy::DatabaseProxy() {
         mMessageList = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
+        //anypeer Id format
+        std::string reg_str("(\\w{8})-(\\w{4})-(\\w{4})-(\\w{4})-(\\w{13})");
+        mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase)
     }
 
     DatabaseProxy::~DatabaseProxy() {
@@ -78,10 +81,15 @@ namespace chatrobot {
                                    std::shared_ptr<std::string> message, std::time_t send_time) {
         MUTEX_LOCKER locker_sync_data(_SyncedMessageList);
         char *errMsg = NULL;
+        std::string msg = *message.get();
+
+        if(msg.size() > 37 && std::regex_match(msg.substr(0, 37).c_str(),*mMsgReg.get()) == true)  {
+            msg = msg.substr(37);
+        }
 
         std::string t_strSql;
         t_strSql = "insert into message_table values(NULL,'"+*friend_id.get()+"'";
-        t_strSql += ",'"+*message.get()+"'";
+        t_strSql += ",'"+msg+"'";
         t_strSql += ","+std::to_string(send_time)+"";
         t_strSql += ");";
 
@@ -195,7 +203,7 @@ namespace chatrobot {
         int nrow;          /* Number of result rows written here */
         int ncolumn;
         std::string t_strSql;
-        t_strSql = "select * from member_table order by id desc";
+        t_strSql = "select * from member_table order by id asc";
         /*step 2: sql语句对象。*/
         sqlite3_stmt *pStmt;
         int rc = sqlite3_prepare_v2(

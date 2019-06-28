@@ -330,6 +330,7 @@ namespace chatrobot {
     }
 
     int CarrierRobot::getUserId(std::string &userid) {
+
         char addr[ELA_MAX_ID_LEN + 1] = {0};
         auto ret = ela_get_userid(mCarrier.get(), addr, sizeof(addr));
         if (ret == nullptr) {
@@ -394,87 +395,4 @@ namespace chatrobot {
         return str;                                // 返回转换日期时间后的string变量。
     }
 
-    bool CarrierRobot::IsJsonIllegal(const char *jsoncontent) {
-        std::stack<char> jsonstr;
-        const char *p = jsoncontent;
-        char startChar = jsoncontent[0];
-        char endChar = '\0';
-        bool isObject = false;//防止 {}{}的判断
-        bool isArray = false;//防止[][]的判断
-
-        while (*p != '\0') {
-            endChar = *p;
-            switch (*p) {
-                case '{':
-                    if (!isObject) {
-                        isObject = true;
-                    } else if (jsonstr.empty())//对象重复入栈
-                    {
-                        return false;
-                    }
-                    jsonstr.push('{');
-                    break;
-                case '"':
-                    if (jsonstr.empty() || jsonstr.top() != '"') {
-                        jsonstr.push(*p);
-                    } else {
-                        jsonstr.pop();
-                    }
-                    break;
-                case '[':
-                    if (!isArray) {
-                        isArray = true;
-                    } else if (jsonstr.empty())//数组重复入栈
-                    {
-                        return false;
-                    }
-                    jsonstr.push('[');
-                    break;
-                case ']':
-                    if (jsonstr.empty() || jsonstr.top() != '[') {
-                        return false;
-                    } else {
-                        jsonstr.pop();
-                    }
-                    break;
-                case '}':
-                    if (jsonstr.empty() || jsonstr.top() != '{') {
-                        return false;
-                    } else {
-                        jsonstr.pop();
-                    }
-                    break;
-                case '\\'://被转义的字符,跳过
-                    p++;
-                    break;
-                default:;
-            }
-            p++;
-        }
-
-        if (jsonstr.empty()) {
-            //确保是对象或者是数组,之外的都不算有效
-            switch (startChar)//确保首尾符号对应
-            {
-                case '{': {
-                    if (endChar == '}') {
-                        return true;
-                    }
-                    return false;
-                }
-                case '[': {
-                    if (endChar == ']') {
-                        return true;
-                    }
-                    return false;
-                }
-                default:
-                    return false;
-            }
-
-            return true;
-        } else {
-            return false;
-        }
-    }
 }
