@@ -12,15 +12,24 @@
 #include <thread>
 #include <ela_carrier.h>
 #include <ela_session.h>
+
 #include "DataBase/DatabaseProxy.h"
 #include <CarrierConfig.h>
 
 namespace chatrobot {
     static const char *TAG = "CarrierRobot";
+
     class CarrierRobot:std::enable_shared_from_this<CarrierRobot> {
     public:
-        static chatrobot::CarrierRobot* getInstance();
+        class Factory {
+        public:
+            static int SetLocalDataDir(const std::string& dir);
+            static std::shared_ptr<CarrierRobot> Create();
 
+        private:
+            static std::string sLocalDataDir;
+            friend class CarrierRobot;
+        };
         ~CarrierRobot();
         int start(const char* data_dir);
         void stop();
@@ -50,7 +59,7 @@ namespace chatrobot {
         //bool listCmd(const std::string& message);
     private:
         static CarrierRobot* instance;
-        CarrierRobot();
+        explicit CarrierRobot();
         std::time_t getTimeStamp();
         bool handleSpecialMessage(std::shared_ptr<std::string> friend_id,
                                   const std::string& message);

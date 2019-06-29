@@ -6,14 +6,13 @@
 #include "Tools/JniUtils.hpp"
 
 extern "C" {
-
+std::shared_ptr<chatrobot::CarrierRobot> mCarrierRobot;
 JNIEXPORT jstring JNICALL
 Java_com_qcode_chatrobot_MainActivity_getAddress(
         JNIEnv *env,
         jobject /* this */) {
-    chatrobot::CarrierRobot *carrier_robot = chatrobot::CarrierRobot::getInstance();
     std::string address;
-    int status = carrier_robot->getAddress(address);
+    mCarrierRobot->getAddress(address);
     return env->NewStringUTF(address.c_str());
 
 } ;
@@ -21,28 +20,31 @@ JNIEXPORT jstring JNICALL
 Java_com_qcode_chatrobot_MainActivity_getUserId(
         JNIEnv *env,
         jobject /* this */) {
-    chatrobot::CarrierRobot *carrier_robot = chatrobot::CarrierRobot::getInstance();
     std::string user_id;
-    int status = carrier_robot->getUserId(user_id);
+    mCarrierRobot->getUserId(user_id);
 
     return env->NewStringUTF(user_id.c_str());
 
-} ;
+};
+
 JNIEXPORT jint JNICALL
 Java_com_qcode_chatrobot_MainActivity_startChatRobot(
         JNIEnv *env,
         jobject /* this */,
         jstring jdata_dir) {
-    chatrobot::CarrierRobot *carrier_robot = chatrobot::CarrierRobot::getInstance();
+
+
     std::shared_ptr<const char> data_dir = JniUtils::GetStringSafely(env, jdata_dir);
-    return carrier_robot->start(data_dir.get());
+    mCarrierRobot = chatrobot::CarrierRobot::Factory::Create();
+
+    return mCarrierRobot->start(data_dir.get());
 }
 JNIEXPORT jint JNICALL
 Java_com_qcode_chatrobot_MainActivity_runChatRobot(
         JNIEnv *env,
         jobject /* this */) {
-    chatrobot::CarrierRobot *carrier_robot = chatrobot::CarrierRobot::getInstance();
-    carrier_robot->runCarrier();
+
+    mCarrierRobot->runCarrier();
     return 0;
 }
 
@@ -58,9 +60,7 @@ Java_com_qcode_chatrobot_MainActivity_getMemberList(JNIEnv *env, jobject jobj) {
     int i;
 
     clsMemberInfo = env->FindClass("com/qcode/chatrobot/ui/MemberInfo");
-
-    chatrobot::CarrierRobot *carrier_robot = chatrobot::CarrierRobot::getInstance();
-    std::shared_ptr<std::vector<std::shared_ptr<chatrobot::MemberInfo>>> memberlist = carrier_robot->getFriendList();
+    std::shared_ptr<std::vector<std::shared_ptr<chatrobot::MemberInfo>>> memberlist = mCarrierRobot->getFriendList();
     std::vector<std::shared_ptr<chatrobot::MemberInfo>> memberlist_vector = *memberlist.get();
     int length = memberlist_vector.size();
     infos = env->NewObjectArray(length, clsMemberInfo, NULL);

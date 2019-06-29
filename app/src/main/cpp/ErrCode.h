@@ -10,6 +10,9 @@
 namespace chatrobot {
     class ErrCode {
     public:
-        static const int FailedCarrier;
+        constexpr static const int FailedCarrier = -1;
+        constexpr static const int InvalidArgument = -4;
+        constexpr static const int StdSystemErrorIndex = -1000;
+        static std::string ToString(int errCode);
     };
 }

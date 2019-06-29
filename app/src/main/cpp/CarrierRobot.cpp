@@ -14,16 +14,44 @@ using namespace std;
 #include <thread>
 #include <Tools/Log.hpp>
 #include "ThirdParty/json.hpp"
+#include <ThirdParty/CompatibleFileSystem.hpp>
 #include <Command/ChatRobotCmd.hpp>
 #include "CarrierRobot.h"
 #include "ErrCode.h"
 
 namespace chatrobot {
     using Json = nlohmann::json;
-    CarrierRobot *CarrierRobot::instance = new CarrierRobot();
+    std::string CarrierRobot::Factory::sLocalDataDir;
 
-    CarrierRobot *CarrierRobot::getInstance() {
-        return instance;
+    /***********************************************/
+    /***** static function implement ***************/
+    /***********************************************/
+    int CarrierRobot::Factory::SetLocalDataDir(const std::string &dir) {
+        if (dir.empty()) {
+            return ErrCode::InvalidArgument;
+        }
+
+        std::error_code stdErrCode;
+        bool ret;
+        ret = std::filesystem::create_directories(dir, stdErrCode);
+        if (ret == false
+            || stdErrCode.value() != 0) {
+            int errCode = ErrCode::StdSystemErrorIndex - stdErrCode.value();
+            auto errMsg = ErrCode::ToString(errCode);
+            Log::D(Log::TAG, "Failed to set local data dir, errcode: %s", errMsg.c_str());
+            return errCode;
+        }
+
+        sLocalDataDir = dir;
+
+        return 0;
+    }
+
+    std::shared_ptr<CarrierRobot> CarrierRobot::Factory::Create() {
+        struct Impl : CarrierRobot {
+        };
+
+        return std::make_shared<Impl>();
     }
 
     CarrierRobot::~CarrierRobot() {
