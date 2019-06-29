@@ -49,12 +49,9 @@ public class MainActivity extends Activity {
         view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
         text_address.setText(address);
         text_userid.setText(user_id);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                runChatRobot();
-            }
-        }).start();
+        
+        //启动聊天机器人
+        runChatRobot();
     
         mMemberListView = (ListView) findViewById(R.id.memberList);
         //获取当前ListView点击的行数，并且得到该数据

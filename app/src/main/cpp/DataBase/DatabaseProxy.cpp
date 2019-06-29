@@ -12,7 +12,7 @@ namespace chatrobot {
         mMessageList = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
         //anypeer Id format
         std::string reg_str("(\\w{8})-(\\w{4})-(\\w{4})-(\\w{4})-(\\w{13})");
-        mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase)
+        mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase);
     }
 
     DatabaseProxy::~DatabaseProxy() {
@@ -111,7 +111,7 @@ namespace chatrobot {
         std::string t_strSql;
         t_strSql = "select * from message_table where FriendId!='"+*friend_id.get()+"'";
         t_strSql += " and SendTimeStamp>"+std::to_string(send_time);
-        t_strSql += " order by SendTimeStamp asc limit 0,"+std::to_string(max_limit)+";";
+        t_strSql += " order by SendTimeStamp desc limit 0,"+std::to_string(max_limit)+";";
         /*step 2: sql语句对象。*/
         sqlite3_stmt *pStmt;
         int rc = sqlite3_prepare_v2(
@@ -136,7 +136,7 @@ namespace chatrobot {
 
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> messages_list = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
         if (nrow != 0 && ncolumn != 0) {     //有查询结果,不包含表头所占行数
-            for (int i = 1; i <= nrow; i++) {        // 第0行为数据表头
+            for (int i = nrow; i >=1; i--) {        // 第0行为数据表头
                 std::shared_ptr<MessageInfo> message_info = std::make_shared<MessageInfo>();
                 message_info->mFriendid = std::make_shared<std::string>(azResult[4*i + 1]);
                 message_info->mMsg = std::make_shared<std::string>(azResult[4*i + 2]);
@@ -231,7 +231,7 @@ namespace chatrobot {
                 mMemberList[azResult[5*i + 1]] = std::make_shared<MemberInfo>(
                         std::make_shared<std::string>(azResult[5*i + 1]),
                         std::make_shared<std::string>(azResult[5*i + 2]),
-                        atoi(azResult[5*i + 3]),
+                        1,//初始化时为offline
                         atol(azResult[5*i + 4]));
             }
         }
@@ -245,8 +245,13 @@ namespace chatrobot {
         char *errMsg;
         //打开一个数据库，如果改数据库不存在，则创建一个名字为databaseName的数据库文件
         int rv;
+        rv = sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
+        if (rv != SQLITE_OK) {
+            Log::D(DatabaseProxy::TAG, "sqlite3_config error: %d\n", rv);
+            return 1;
+        }
         rv = sqlite3_open(strConn.c_str(), &mDb);
-        if (rv) {
+        if (rv != SQLITE_OK) {
             Log::D(DatabaseProxy::TAG, "Cannot open database: %s\n", sqlite3_errmsg(mDb));
             sqlite3_close(mDb);
             return 1;

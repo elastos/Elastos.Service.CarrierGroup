@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory> // std::unique_ptr
 #include <ctime>
+#include <thread>
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include "DataBase/DatabaseProxy.h"
@@ -22,6 +23,7 @@ namespace chatrobot {
 
         ~CarrierRobot();
         int start(const char* data_dir);
+        void stop();
         int getAddress(std::string& address);
         int getUserId(std::string& userid);
         static void OnCarrierConnection(ElaCarrier *carrier,
@@ -38,11 +40,14 @@ namespace chatrobot {
                                                   const void *msg, size_t len, void *context);
 
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
+        void runCarrierInner();
         void runCarrier();
+
         void updateMemberInfo(std::shared_ptr<std::string> friendid, std::shared_ptr<std::string> nickname,
                               ElaConnectionStatus status);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>getFriendList();
+        //bool listCmd(const std::string& message);
     private:
         static CarrierRobot* instance;
         CarrierRobot();
@@ -52,6 +57,8 @@ namespace chatrobot {
         std::string convertDatetimeToString(std::time_t time);
         bool relayMessages();
         std::mutex _mReplyMessage;
+        std::thread mCarrieryThread;
+        bool mQuit;
         std::shared_ptr<std::string> mCreaterFriendId;
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;

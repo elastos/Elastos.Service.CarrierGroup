@@ -11,8 +11,10 @@ using namespace std;
 
 #include <ela_carrier.h>
 #include <ela_session.h>
+#include <thread>
 #include <Tools/Log.hpp>
 #include "ThirdParty/json.hpp"
+#include <Command/ChatRobotCmd.hpp>
 #include "CarrierRobot.h"
 #include "ErrCode.h"
 
@@ -26,11 +28,13 @@ namespace chatrobot {
 
     CarrierRobot::~CarrierRobot() {
         mCarrierConfig.reset();
+        this->stop();
     }
 
     CarrierRobot::CarrierRobot() {
         mCarrierConfig = std::make_shared<CarrierConfig>();
         mDatabaseProxy = std::make_shared<DatabaseProxy>();
+        mQuit = false;
     }
 
     int CarrierRobot::GetCarrierUsrIdByAddress(const std::string &address, std::string &usrId) {
@@ -48,13 +52,19 @@ namespace chatrobot {
         return 0;
     }
 
-    void CarrierRobot::runCarrier() {
+    void CarrierRobot::runCarrierInner() {
         int ret = ela_run(mCarrier.get(), 500);
         if (ret < 0) {
             ela_kill(mCarrier.get());
             Log::E(Log::TAG, "Failed to run carrier!");
-            return;
         }
+        while (!mQuit) {
+
+        }
+    }
+
+    void CarrierRobot::runCarrier() {
+        mCarrieryThread = std::thread(&CarrierRobot::runCarrierInner, this); //引用
     }
 
     void CarrierRobot::OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
@@ -239,9 +249,9 @@ namespace chatrobot {
 
     void CarrierRobot::addMessgae(std::shared_ptr<std::string> friend_id,
                                   std::shared_ptr<std::string> message, std::time_t send_time) {
-
-        bool spec_command = handleSpecialMessage(friend_id, *message.get());
-        if (spec_command == false) {
+        std::string errMsg;
+        int ret = ChatRobotCmd::Do(this, *message.get(), errMsg);
+        if (ret < 0) {
             //save message
             mDatabaseProxy->addMessgae(friend_id, message, send_time);
             //将该消息转发给其他人
@@ -272,6 +282,11 @@ namespace chatrobot {
         carrier_robot->addMessgae(std::make_shared<std::string>(from),
                                   std::make_shared<std::string>(data),
                                   carrier_robot->getTimeStamp());
+    }
+
+    void CarrierRobot::stop() {
+        mQuit = true;
+        mDatabaseProxy->closeDb();
     }
 
     int CarrierRobot::start(const char *data_dir) {
@@ -326,6 +341,11 @@ namespace chatrobot {
             Log::E(Log::TAG, "CarrierRobot::start failed! ret=%s(0x%x)", strerr_buf, err);
             return ErrCode::FailedCarrier;
         }
+        std::shared_ptr<MemberInfo> member_info = mDatabaseProxy->getMemberInfo(1);
+        if (member_info.get() != nullptr) {
+            mCreaterFriendId = member_info->mFriendid;
+        }
+
         return 0;
     }
 
