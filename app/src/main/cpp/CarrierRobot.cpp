@@ -214,60 +214,16 @@ namespace chatrobot {
         bool ret = false;
         //Test
         if (message.find("/list") == 0) {
-            std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
-            std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
-            std::string ret_msg_str = "";
-            for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
-                std::shared_ptr<MemberInfo> memberInfo = item->second;
-                memberInfo->Lock();
-                ret_msg_str += std::string(
-                        std::to_string(memberInfo->mIndex) + ": " +
-                        (*memberInfo->mNickName.get()) + " " +
-                        std::string(memberInfo->mStatus == 0 ? "online" : "offline") + "\n");
-                memberInfo->UnLock();//同名还没处理
-            }
 
-            const char *ret_msg = ret_msg_str.c_str();
-            int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                                  ret_msg,
-                                                  strlen(ret_msg));
-            if (ela_ret != 0) {
-                Log::I(Log::TAG,
-                       "handleSpecialMessage .c_str(): %s errno:(0x%x)",
-                       ret_msg_str.c_str(), ela_get_error());
-            }
             ret = true;
         } else if (message.find("/help") == 0) {
             const char *msg_str = "/list list the members \n/del delete the member, format:del number";
-            ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                    msg_str, strlen(msg_str));
+
             ret = true;
         } else if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
             //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
             if (message.find("/del") == 0) {
-                std::string del_userindex = message.substr(4, message.length() - 4);
-                int user_num = std::atoi(del_userindex.c_str());
-                std::shared_ptr<MemberInfo> memberInfo = mDatabaseProxy->getMemberInfo(user_num);
-                char msg_str[256];
-                if (memberInfo.get() != nullptr) {
-                    memberInfo->Lock();
-                    mDatabaseProxy->removeMember(*memberInfo->mFriendid.get());
-                    int ela_ret = ela_remove_friend(mCarrier.get(),
-                                                    memberInfo->mFriendid.get()->c_str());
-                    sprintf(msg_str, "%s has been kicked out!",
-                            memberInfo->mNickName.get()->c_str());
-                    if (ela_ret != 0) {
-                        Log::I(Log::TAG,
-                               "handleSpecialMessage can't delete this user: %s errno:(0x%x)",
-                               memberInfo->mFriendid.get()->c_str(), ela_get_error());
-                    }
-                    memberInfo->UnLock();
-                } else {
-                    sprintf(msg_str, "num %s member not exist!", del_userindex.c_str());
-                }
 
-                ela_send_friend_message(mCarrier.get(), friend_id->c_str(),
-                                        msg_str, strlen(msg_str));
                 ret = true;
             }
         }
@@ -278,7 +234,8 @@ namespace chatrobot {
     void CarrierRobot::addMessgae(std::shared_ptr<std::string> friend_id,
                                   std::shared_ptr<std::string> message, std::time_t send_time) {
         std::string errMsg;
-        int ret = ChatRobotCmd::Do(this, *message.get(), errMsg);
+        std::string pre_cmd = *message.get() + " "+*friend_id.get();//Pretreatment cmd
+        int ret = ChatRobotCmd::Do(this, pre_cmd, errMsg);
         if (ret < 0) {
             //save message
             mDatabaseProxy->addMessgae(friend_id, message, send_time);
@@ -442,5 +399,75 @@ namespace chatrobot {
         std::string str(s);                             // 定义string变量，并将总日期时间char*变量作为构造函数的参数传入。
         return str;                                // 返回转换日期时间后的string变量。
     }
+    void CarrierRobot::helpCmd(const std::vector<std::string> &args, const std::string& message) {
+        if(args.size() >= 2) {
+            const std::string friend_id = args[1];
+            int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id.c_str(),
+                                                  message.c_str(), strlen(message.c_str()));
+            if (ela_ret != 0) {
+                Log::I(Log::TAG,
+                       "helpCmd .c_str(): %s errno:(0x%x)",
+                       message.c_str(), ela_get_error());
+            }
+        }
 
+    }
+
+    void CarrierRobot::listCmd(const std::vector<std::string> &args) {
+        if(args.size() >= 2) {
+            const std::string friend_id = args[1];
+            std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
+            std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+            std::string ret_msg_str = "";
+            for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
+                std::shared_ptr<MemberInfo> memberInfo = item->second;
+                memberInfo->Lock();
+                ret_msg_str += std::string(
+                        std::to_string(memberInfo->mIndex) + ": " +
+                        (*memberInfo->mNickName.get()) + " " +
+                        std::string(memberInfo->mStatus == 0 ? "online" : "offline") + "\n");
+                memberInfo->UnLock();//同名还没处理
+            }
+
+            int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id.c_str(),
+                                                  ret_msg_str.c_str(),
+                                                  strlen(ret_msg_str.c_str()));
+            if (ela_ret != 0) {
+                Log::I(Log::TAG,
+                       "listCmd .c_str(): %s errno:(0x%x)",
+                       ret_msg_str.c_str(), ela_get_error());
+            }
+        }
+
+    }
+    void CarrierRobot::delCmd(const std::vector<std::string> &args) {
+        if(args.size() >= 3) {
+            const std::string friend_id = args[2];
+            if ((*mCreaterFriendId.get()).compare((friend_id)) == 0) {
+                std::string del_userindex = args[1];
+                int user_num = std::atoi(del_userindex.c_str());
+                std::shared_ptr<MemberInfo> memberInfo = mDatabaseProxy->getMemberInfo(user_num);
+                char msg_str[256];
+                if (memberInfo.get() != nullptr) {
+                    memberInfo->Lock();
+                    mDatabaseProxy->removeMember(*memberInfo->mFriendid.get());
+                    int ela_ret = ela_remove_friend(mCarrier.get(),
+                                                    memberInfo->mFriendid.get()->c_str());
+                    sprintf(msg_str, "%s has been kicked out!",
+                            memberInfo->mNickName.get()->c_str());
+                    if (ela_ret != 0) {
+                        Log::I(Log::TAG,
+                               "delCmd can't delete this user: %s errno:(0x%x)",
+                               memberInfo->mFriendid.get()->c_str(), ela_get_error());
+                    }
+                    memberInfo->UnLock();
+                } else {
+                    sprintf(msg_str, "num %s member not exist!", del_userindex.c_str());
+                }
+
+                ela_send_friend_message(mCarrier.get(), friend_id.c_str(),
+                                        msg_str, strlen(msg_str));
+            }
+        }
+    }
 }

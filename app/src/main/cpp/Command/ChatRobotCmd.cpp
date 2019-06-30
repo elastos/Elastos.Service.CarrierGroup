@@ -8,12 +8,12 @@
 /* === variables initialize =========== */
 /* =========================================== */
 const std::vector<ChatRobotCmd::CommandInfo> ChatRobotCmd::gCommandInfoList{
-        {'h', "help",  ChatRobotCmd::Help,            "      Print help usages."},
-        {'a', "add",   ChatRobotCmd::AddFriend,       "Add a new friend"},
-        {'b', "block", ChatRobotCmd::BlockFriend,     "block a friend"},
-        {'d', "del",   ChatRobotCmd::DelFriend,       "Delete a friend"},
-        {'i', "info",  ChatRobotCmd::PrintInfo, "Print friend's detail infommation"},
-        {'l', "list",  ChatRobotCmd::ListFriends,     "List friends."},
+        {"h", "help",  ChatRobotCmd::Help,            "Print help usages."},
+        //{'a', "add",   ChatRobotCmd::AddFriend,       "Add a new friend"},
+        //{'b', "block", ChatRobotCmd::BlockFriend,     "block a friend"},
+        {"d", "del",   ChatRobotCmd::DelFriend,       "Delete a friend"},
+        //{'i', "info",  ChatRobotCmd::PrintInfo, "Print friend's detail infommation"},
+        {"l", "list",  ChatRobotCmd::ListFriends,     "List friends."},
 
 };
 
@@ -43,7 +43,7 @@ int ChatRobotCmd::Do(void* context,
     const auto &cmd = args[0];
 
     for (const auto &cmdInfo : gCommandInfoList) {
-        if (cmd.compare(0, 1, &cmdInfo.mCmd) != 0
+        if (cmd.compare(0, 1, cmdInfo.mCmd) != 0
             && cmd != cmdInfo.mLongCmd) {
             continue;
         }
@@ -73,13 +73,13 @@ int ChatRobotCmd::Help(void* context,
                        const std::vector<std::string> &args,
                        std::string &errMsg) {
     std::cout << "Usage:" << std::endl;
+    std::string msg = "";
+
     for (const auto &cmdInfo : gCommandInfoList) {
-        std::cout << "  " << cmdInfo.mCmd << " | " << cmdInfo.mLongCmd << ": " << cmdInfo.mUsage
-                  << std::endl;
+        msg += ""+cmdInfo.mCmd + " | " + cmdInfo.mLongCmd + " : "+ cmdInfo.mUsage + "\n";
     }
-
-
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
+    carrier_robot->helpCmd(args, msg);
     return 0;
 }
 
@@ -119,6 +119,7 @@ int ChatRobotCmd::DelFriend(void* context,
                      const std::vector<std::string> &args,
                      std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
+    carrier_robot->delCmd(args);
     return 0;
 }
 
@@ -126,7 +127,7 @@ int ChatRobotCmd::ListFriends(void* context,
                        const std::vector<std::string> &args,
                        std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
-
+    carrier_robot->listCmd(args);
     return 0;
 }
 
@@ -134,5 +135,6 @@ int ChatRobotCmd::PrintInfo(void* context,
                            const std::vector<std::string> &args,
                            std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
+
     return 0;
 }

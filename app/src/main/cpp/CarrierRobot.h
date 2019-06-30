@@ -56,7 +56,9 @@ namespace chatrobot {
                               ElaConnectionStatus status);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>getFriendList();
-        //bool listCmd(const std::string& message);
+        void helpCmd(const std::vector<std::string> &args, const std::string& message);
+        void listCmd(const std::vector<std::string> &args);
+        void delCmd(const std::vector<std::string> &args);
     private:
         static CarrierRobot* instance;
         explicit CarrierRobot();

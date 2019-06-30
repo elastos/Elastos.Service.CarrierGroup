@@ -28,7 +28,7 @@ protected:
 private:
     /*** type define ***/
     struct CommandInfo {
-        char mCmd;
+        std::string mCmd;
         std::string mLongCmd;
         std::function<int(void* context, const std::vector<std::string>&, std::string&)> mFunc;
         std::string mUsage;
