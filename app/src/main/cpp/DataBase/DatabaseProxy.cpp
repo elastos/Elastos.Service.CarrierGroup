@@ -10,19 +10,17 @@
 namespace chatrobot {
     DatabaseProxy::DatabaseProxy() {
         mMessageList = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
-        //anypeer Id format
-        std::string reg_str("(\\w{8})-(\\w{4})-(\\w{4})-(\\w{4})-(\\w{13})");
-        mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase);
+        mMemberList = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
     }
 
     DatabaseProxy::~DatabaseProxy() {
-        mMemberList.clear();
+        mMemberList.reset();
         mMessageList.reset();
     }
 
     void DatabaseProxy::updateMemberInfo(std::shared_ptr<MemberInfo> target_memberinfo) {
+        std::shared_ptr<MemberInfo> member_info = this->getMemberInfo(target_memberinfo->mFriendid);
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
-        std::shared_ptr<MemberInfo> member_info = mMemberList[*target_memberinfo->mFriendid.get()];
         std::shared_ptr<std::string> tmp_nickname = target_memberinfo->mNickName;
         std::string t_strSql = "";
         char *errMsg = NULL;
@@ -46,7 +44,7 @@ namespace chatrobot {
 
         } else {
             member_info = target_memberinfo;
-            mMemberList[*member_info->mFriendid.get()] = member_info;
+            mMemberList->push_back(member_info);
             t_strSql = "insert into member_table values(NULL,'"+*member_info->mFriendid.get()+"'";
             t_strSql += ",'"+*member_info->mNickName.get()+"'";
             t_strSql += ","+std::to_string(member_info->mStatus);
@@ -63,33 +61,45 @@ namespace chatrobot {
     std::shared_ptr<MemberInfo>
     DatabaseProxy::getMemberInfo(std::shared_ptr<std::string> friendid) {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
-        return mMemberList[*friendid.get()];
+        for (int i = 0; i < mMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
+            }
+            member_info->Lock();
+            if (member_info->mFriendid->compare(*friendid.get()) == 0) {
+                member_info->UnLock();
+                return member_info;
+            }
+            member_info->UnLock();
+        }
+        return std::shared_ptr<MemberInfo>(nullptr);
     }
 
     std::shared_ptr<MemberInfo> DatabaseProxy::getMemberInfo(int index) {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
-        for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
-            auto value = item->second;
-            if (value->mIndex == index) {
-                return value;
+        for (int i = 0; i < mMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
             }
+            member_info->Lock();
+            if (member_info->mIndex == index) {
+                member_info->UnLock();
+                return member_info;
+            }
+            member_info->UnLock();
         }
         return std::shared_ptr<MemberInfo>(nullptr);
     }
 
     void DatabaseProxy::addMessgae(std::shared_ptr<std::string> friend_id,
-                                   std::shared_ptr<std::string> message, std::time_t send_time) {
+                                   std::string message, std::time_t send_time) {
         MUTEX_LOCKER locker_sync_data(_SyncedMessageList);
         char *errMsg = NULL;
-        std::string msg = *message.get();
-
-        if(msg.size() > 37 && std::regex_match(msg.substr(0, 37).c_str(),*mMsgReg.get()) == true)  {
-            msg = msg.substr(37);
-        }
-
         std::string t_strSql;
         t_strSql = "insert into message_table values(NULL,'"+*friend_id.get()+"'";
-        t_strSql += ",'"+msg+"'";
+        t_strSql += ",'"+message+"'";
         t_strSql += ","+std::to_string(send_time)+"";
         t_strSql += ");";
 
@@ -150,32 +160,37 @@ namespace chatrobot {
         return messages_list;
     }
 
-    std::map<std::string, std::shared_ptr<MemberInfo>> DatabaseProxy::getFriendList() {
+    std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> DatabaseProxy::getFriendList() {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         return mMemberList;
     }
 
     bool DatabaseProxy::removeMember(std::string friendid) {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
-        std::map<std::string, std::shared_ptr<MemberInfo>>::iterator key = mMemberList.find(
-                friendid);
-        if (key != mMemberList.end()) {
-            mMemberList.erase(key);
-            char *errMsg = NULL;
-            std::string t_strSql;
-
-            t_strSql = "delete from member_table where FriendId='"+friendid+"';";
-            //消息直接入库
-            int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
-            if (rv != SQLITE_OK) {
-                Log::D(DatabaseProxy::TAG, "SQLite removeMember error: %s\n",
-                       errMsg);
+        for (int i = 0; i < mMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
             }
-            return true;
-        } else {
-            Log::D(Log::TAG, "removeMember not exist, friendid:%s", friendid.c_str());
-            return false;
+            member_info->Lock();
+            if(member_info->mFriendid->compare(friendid) == 0) {
+                mMemberList->erase(std::begin(*mMemberList.get()) + i);
+                char *errMsg = NULL;
+                std::string t_strSql;
+                t_strSql = "delete from member_table where FriendId='" + friendid + "';";
+                //消息直接入库
+                int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
+                if (rv != SQLITE_OK) {
+                    Log::D(DatabaseProxy::TAG, "SQLite removeMember error: %s\n",
+                           errMsg);
+                }
+                member_info->UnLock();
+                return true;
+            }
+            member_info->UnLock();
         }
+        Log::D(Log::TAG, "removeMember not exist, friendid:%s", friendid.c_str());
+        return false;
     }
 
     int DatabaseProxy::callback(void *context, int argc, char **argv, char **azColName) {
@@ -228,11 +243,11 @@ namespace chatrobot {
 
         if (nrow != 0 && ncolumn != 0) {     //有查询结果,不包含表头所占行数
             for (int i = 1; i <= nrow; i++) {        // 第0行为数据表头
-                mMemberList[azResult[5*i + 1]] = std::make_shared<MemberInfo>(
+                mMemberList->push_back(std::make_shared<MemberInfo>(
                         std::make_shared<std::string>(azResult[5*i + 1]),
                         std::make_shared<std::string>(azResult[5*i + 2]),
                         1,//初始化时为offline
-                        atol(azResult[5*i + 4]));
+                        atol(azResult[5*i + 4])));
             }
         }
 

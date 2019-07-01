@@ -10,6 +10,7 @@
 #include <memory> // std::unique_ptr
 #include <ctime>
 #include <thread>
+#include <regex>
 #include <ela_carrier.h>
 #include <ela_session.h>
 
@@ -61,12 +62,12 @@ namespace chatrobot {
         void delCmd(const std::vector<std::string> &args);
     private:
         static CarrierRobot* instance;
+
         explicit CarrierRobot();
         std::time_t getTimeStamp();
-        bool handleSpecialMessage(std::shared_ptr<std::string> friend_id,
-                                  const std::string& message);
         std::string convertDatetimeToString(std::time_t time);
         bool relayMessages();
+        std::shared_ptr<std::regex> mMsgReg;
         std::mutex _mReplyMessage;
         std::thread mCarrieryThread;
         bool mQuit;

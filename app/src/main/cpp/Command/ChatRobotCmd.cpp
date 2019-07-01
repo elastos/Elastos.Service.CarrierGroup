@@ -23,7 +23,7 @@ const std::vector<ChatRobotCmd::CommandInfo> ChatRobotCmd::gCommandInfoList{
 int ChatRobotCmd::Do(void* context,
                      const std::string &cmd_msg,
                      std::string &errMsg) {
-    if (cmd_msg.find("/") != 0) {
+    if (cmd_msg.find("/") < 0) {
         errMsg = "not command";
         return -10000;
     }

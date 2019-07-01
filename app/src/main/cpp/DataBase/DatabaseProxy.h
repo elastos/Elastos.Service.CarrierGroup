@@ -9,7 +9,6 @@
 #include <map>
 #include <vector>
 #include <mutex>
-#include <regex>
 #include <sqlite3.h>
 #include "MessageInfo.h"
 #include "MemberInfo.h"
@@ -35,10 +34,10 @@ namespace chatrobot {
         std::shared_ptr<MemberInfo> getMemberInfo(int index);
 
         void
-        addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message,
+        addMessgae(std::shared_ptr<std::string> friend_id, std::string message,
                    std::time_t send_time);
 
-        std::map<std::string, std::shared_ptr<MemberInfo>> getFriendList();
+        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> getFriendList();
 
         bool removeMember(std::string friendid);
 
@@ -54,9 +53,8 @@ namespace chatrobot {
         std::mutex _SyncedMessageList;
         std::string mDbPath;
         sqlite3 *mDb;
-        std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList;
+        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> mMemberList;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> mMessageList;
-        std::shared_ptr<std::regex> mMsgReg;
         void syncMemberList();
 
         static int callback(void *context, int argc, char **argv, char **azColName);

@@ -12,6 +12,7 @@ using namespace std;
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include <thread>
+#include <chrono>
 #include <Tools/Log.hpp>
 #include "ThirdParty/json.hpp"
 #include <ThirdParty/CompatibleFileSystem.hpp>
@@ -62,6 +63,9 @@ namespace chatrobot {
     CarrierRobot::CarrierRobot() {
         mCarrierConfig = std::make_shared<CarrierConfig>();
         mDatabaseProxy = std::make_shared<DatabaseProxy>();
+        //anypeer Id format
+        std::string reg_str("(\\w{8})-(\\w{4})-(\\w{4})-(\\w{4})-(\\w{13})");
+        mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase);
         mQuit = false;
     }
 
@@ -87,7 +91,7 @@ namespace chatrobot {
             Log::E(Log::TAG, "Failed to run carrier!");
         }
         while (!mQuit) {
-
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 
@@ -156,10 +160,9 @@ namespace chatrobot {
 
     bool CarrierRobot::relayMessages() {
         MUTEX_LOCKER locker_sync_data(_mReplyMessage);
-        std::map<std::string, std::shared_ptr<MemberInfo>> memberlist = mDatabaseProxy->getFriendList();
-        std::map<std::string, std::shared_ptr<chatrobot::MemberInfo>>::iterator iter;
-        for (iter = memberlist.begin(); iter != memberlist.end(); iter++) {
-            std::shared_ptr<chatrobot::MemberInfo> memberInfo = iter->second;
+        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> memberlist = mDatabaseProxy->getFriendList();
+        for (int i = 0; i < memberlist->size(); i++) {
+            std::shared_ptr<MemberInfo> memberInfo = memberlist->at(i);
             if (memberInfo.get() == nullptr) {
                 continue;
             }
@@ -169,7 +172,6 @@ namespace chatrobot {
                 memberInfo->UnLock();
                 continue;
             }
-
             std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(
                     memberInfo->mFriendid, memberInfo->mMsgTimeStamp, 100);
             if (message_list.get() != nullptr) {
@@ -197,7 +199,6 @@ namespace chatrobot {
                         info_changed = true;
                         memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
                     }
-
                 }
             }
             memberInfo->UnLock();
@@ -209,54 +210,25 @@ namespace chatrobot {
         return false;
     }
 
-    bool CarrierRobot::handleSpecialMessage(std::shared_ptr<std::string> friend_id,
-                                            const std::string &message) {
-        bool ret = false;
-        //Test
-        if (message.find("/list") == 0) {
-
-            ret = true;
-        } else if (message.find("/help") == 0) {
-            const char *msg_str = "/list list the members \n/del delete the member, format:del number";
-
-            ret = true;
-        } else if ((*mCreaterFriendId.get()).compare((*friend_id.get())) == 0) {
-            //群主时，解析特殊指令,若有特殊指令，执行相应的任务，如踢人、退群等
-            if (message.find("/del") == 0) {
-
-                ret = true;
-            }
-        }
-
-        return ret;
-    }
-
     void CarrierRobot::addMessgae(std::shared_ptr<std::string> friend_id,
                                   std::shared_ptr<std::string> message, std::time_t send_time) {
         std::string errMsg;
-        std::string pre_cmd = *message.get() + " "+*friend_id.get();//Pretreatment cmd
+        std::string msg = *message.get();
+        if(msg.size() > 38 && std::regex_match(msg.substr(0, 37).c_str(),*mMsgReg.get()) == true)  {
+            msg = msg.substr(38);//包含空格
+        }
+        std::string pre_cmd = msg + " "+*friend_id.get();//Pretreatment cmd
         int ret = ChatRobotCmd::Do(this, pre_cmd, errMsg);
         if (ret < 0) {
             //save message
-            mDatabaseProxy->addMessgae(friend_id, message, send_time);
+            mDatabaseProxy->addMessgae(friend_id, msg, send_time);
             //将该消息转发给其他人
             relayMessages();
         }
     }
 
     std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> CarrierRobot::getFriendList() {
-        std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
-        std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
-        for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
-            auto memberInfo = item->second;
-            if (memberInfo.get() != nullptr) {
-                memberInfo->Lock();
-                friendlist->push_back(memberInfo);
-                memberInfo->UnLock();
-            }
-        }
-
-        return friendlist;
+        return mDatabaseProxy->getFriendList();
     }
 
     void CarrierRobot::OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
@@ -416,11 +388,13 @@ namespace chatrobot {
     void CarrierRobot::listCmd(const std::vector<std::string> &args) {
         if(args.size() >= 2) {
             const std::string friend_id = args[1];
-            std::map<std::string, std::shared_ptr<MemberInfo>> mMemberList = mDatabaseProxy->getFriendList();
-            std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> friendlist = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+            std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> memberlist = mDatabaseProxy->getFriendList();
             std::string ret_msg_str = "";
-            for (auto item = mMemberList.begin(); item != mMemberList.end(); item++) {
-                std::shared_ptr<MemberInfo> memberInfo = item->second;
+            for (int i = 0; i < memberlist->size(); i++) {
+                std::shared_ptr<MemberInfo> memberInfo = memberlist->at(i);
+                if (memberInfo.get() == nullptr) {
+                    continue;
+                }
                 memberInfo->Lock();
                 ret_msg_str += std::string(
                         std::to_string(memberInfo->mIndex) + ": " +
@@ -450,7 +424,9 @@ namespace chatrobot {
                 char msg_str[256];
                 if (memberInfo.get() != nullptr) {
                     memberInfo->Lock();
-                    mDatabaseProxy->removeMember(*memberInfo->mFriendid.get());
+                    std::string del_friend_id = *memberInfo->mFriendid.get();
+                    memberInfo->UnLock();
+                    mDatabaseProxy->removeMember(del_friend_id);
                     int ela_ret = ela_remove_friend(mCarrier.get(),
                                                     memberInfo->mFriendid.get()->c_str());
                     sprintf(msg_str, "%s has been kicked out!",
@@ -460,7 +436,6 @@ namespace chatrobot {
                                "delCmd can't delete this user: %s errno:(0x%x)",
                                memberInfo->mFriendid.get()->c_str(), ela_get_error());
                     }
-                    memberInfo->UnLock();
                 } else {
                     sprintf(msg_str, "num %s member not exist!", del_userindex.c_str());
                 }
