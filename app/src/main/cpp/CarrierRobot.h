@@ -70,7 +70,6 @@ namespace chatrobot {
         std::shared_ptr<std::regex> mMsgReg;
         std::mutex _mReplyMessage;
         std::thread mCarrieryThread;
-        bool mQuit;
         std::shared_ptr<std::string> mCreaterFriendId;
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;

@@ -66,7 +66,6 @@ namespace chatrobot {
         //anypeer Id format
         std::string reg_str("(\\w{8})-(\\w{4})-(\\w{4})-(\\w{4})-(\\w{13})");
         mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase);
-        mQuit = false;
     }
 
     int CarrierRobot::GetCarrierUsrIdByAddress(const std::string &address, std::string &usrId) {
@@ -90,9 +89,7 @@ namespace chatrobot {
             ela_kill(mCarrier.get());
             Log::E(Log::TAG, "Failed to run carrier!");
         }
-        while (!mQuit) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+
     }
 
     void CarrierRobot::runCarrier() {
@@ -242,7 +239,6 @@ namespace chatrobot {
     }
 
     void CarrierRobot::stop() {
-        mQuit = true;
         mDatabaseProxy->closeDb();
     }
 

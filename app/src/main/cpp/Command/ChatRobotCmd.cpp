@@ -17,17 +17,26 @@ const std::vector<ChatRobotCmd::CommandInfo> ChatRobotCmd::gCommandInfoList{
 
 };
 
+inline std::string& ltrim(std::string &str) {
+    std::string::iterator p = std::find_if(str.begin(), str.end(), std::not1(std::ptr_fun<int, int>(isspace)));
+    str.erase(str.begin(), p);
+    return str;
+}
+
 /* =========================================== */
 /* === function implement ============= */
 /* =========================================== */
 int ChatRobotCmd::Do(void* context,
                      const std::string &cmd_msg,
                      std::string &errMsg) {
-    if (cmd_msg.find("/") < 0) {
+    std::string trim_msg = cmd_msg;
+    trim_msg = ltrim(trim_msg);
+    if (trim_msg.find('/') != 0) {
         errMsg = "not command";
         return -10000;
     }
-    const std::string &cmdLine = cmd_msg.substr(1);
+
+    const std::string &cmdLine = trim_msg.substr(1);
     auto wsfront = std::find_if_not(cmdLine.begin(), cmdLine.end(),
                                     [](int c) { return std::isspace(c); });
     auto wsback = std::find_if_not(cmdLine.rbegin(), cmdLine.rend(),
