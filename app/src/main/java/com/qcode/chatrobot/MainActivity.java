@@ -2,136 +2,128 @@ package com.qcode.chatrobot;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Bundle;
+
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import com.qcode.chatrobot.common.MyQRCode;
+import com.qcode.chatrobot.manager.GroupInfo;
+import com.qcode.chatrobot.manager.GroupManager;
+import com.qcode.chatrobot.ui.GroupListAdapter;
+import com.qcode.chatrobot.ui.PopUpWindowSelf;
 
-import com.qcode.chatrobot.ui.MemberInfo;
-import com.qcode.chatrobot.ui.MemberListAdapter;
-import com.qcode.chatrobot.ui.QRCode;
-
-import org.w3c.dom.Text;
-
-import java.lang.reflect.Member;
-import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends Activity {
-    
-    // Used to load the 'native-lib' library on application startup.
-    static {
-        System.loadLibrary("chatrobot");
-    }
-    private ListView mMemberListView;
+import static com.qcode.chatrobot.manager.GroupManager.*;
+
+public class MainActivity extends Activity implements GroupListener {
+    public static final String TAG = "ChatRobot";
+    private ListView mGroupListView;
     private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     private Context mContext;
-    private MemberListAdapter mAdapter;
+    private GroupListAdapter mAdapter;
+    private GroupManager mGroupManager;
+    private int mCurrentGroupId;
+    private PopUpWindowSelf mPopUpWindowSelf;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mContext = this.getApplicationContext();
-        TextView text_address = findViewById(R.id.text_address);
-        TextView text_userid = findViewById(R.id.text_userid);
-        startChatRobot(getLocalCacheDir());
-        String address = getAddress();
-        String user_id = getUserId();
-        ImageView view = findViewById(R.id.qr_image);
-        MyQRCode qrcode = new MyQRCode(-1, 1);
-        view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
-        text_address.setText(address);
-        text_userid.setText(user_id);
-        
-        //启动聊天机器人
-        runChatRobot();
-    
-        mMemberListView = (ListView) findViewById(R.id.memberList);
+        mCurrentGroupId = -1;
+        mPopUpWindowSelf = new PopUpWindowSelf(mContext, this.getLayoutInflater());
+        mGroupListView = (ListView) findViewById(R.id.groupList);
         //获取当前ListView点击的行数，并且得到该数据
-        mMemberListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mGroupListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            
-            }
-        });
-    
-        mAdapter = new MemberListAdapter(this.getLayoutInflater());
-        mMemberListView.setAdapter(mAdapter);
-        mMemberListView.requestFocus();
-        updateMemberList();
-    }
-    void updateMemberList() {
-        MemberInfo[] member_info = getMemberList();
-        mAdapter.setData(member_info);
-        mMainThreadHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                updateMemberList();
-            }
-        }, 1000);
-    }
-    class MyQRCode extends QRCode {
-        public MyQRCode(int typeNumber, int errorCorrectLevel) {
-            super(typeNumber, errorCorrectLevel);
-        }
-        
-        public Bitmap getBitmap(String src, int width, int height) {
-            addData(src);
-            make();
-            //1.创建Bitmap
-            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas();
-            canvas.setBitmap(bitmap);
-            // compute tileW/tileH based on options.width/options.height
-            float tileW = (float) width / (getModuleCount() + 4);
-            float tileH = (float) height / (getModuleCount() + 4);
-            Paint paint = new Paint();
-            paint.setStyle(Paint.Style.FILL);
-            
-            // draw in the canvas
-            for (int row = 0; row < getModuleCount() + 4; row++) {
-                for (int col = 0; col < getModuleCount() + 4; col++) {
-                    int color = 0xffffffff;
-                    
-                    if (row < 2 || row > (getModuleCount() + 1) || col < 2 || col > (getModuleCount() + 1)) {
-                    
-                    } else {
-                        color = isDark(row - 2, col - 2) ? 0xff000000 : 0xffffffff;
-                    }
-                    paint.setColor(color);
-                    float w = (float) ((Math.ceil((col + 1) * tileW) - Math.floor(col * tileW)));
-                    float h = (float) ((Math.ceil((row + 1) * tileW) - Math.floor(row * tileW)));
-                    float x = (float) Math.round(col * tileW);
-                    float y = (float) Math.round(row * tileH);
-                    canvas.drawRect(x, y, x + w, y + h, paint);
+                //打开二级页面
+                List<GroupInfo> mGroupList = mGroupManager.getGroupList();
+                mGroupManager.switchGroup(mGroupList.get(position).mId);
+                if (mGroupList.get(position).mMemberList != null && mGroupList.get(position).mMemberList.length > 0) {
+                    mPopUpWindowSelf.show(view, mGroupList.get(position).mMemberList);
                 }
             }
-            return bitmap;
-        }
+        });
+        mGroupListView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                mGroupManager.switchGroup(position);
+            }
+            
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+        
+            }
+        });
+        mAdapter = new GroupListAdapter(this.getLayoutInflater());
+        mGroupListView.setAdapter(mAdapter);
+        
+        mGroupManager = new GroupManager(mContext);
+        mGroupManager.registerGroupListener(this);
+        mGroupManager.recoveryGroup();//恢复旧数据
+        
+        Button createBtn = findViewById(R.id.createBtn);
+        createBtn.requestFocus();
+        createBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mGroupManager.createGroup();
+            }
+        });
+        
+        mAdapter.setData(mGroupManager.getGroupList());
     }
     
-    public String getLocalCacheDir() {
-        return mContext.getCacheDir() + "/";
+    @Override
+    public void onDestroy() {
+        mGroupManager.destroy();
+        super.onDestroy();
     }
     
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native int startChatRobot(String data_dir);
+    private String getAddress() {
     
-    public native int runChatRobot();
+        return "";
+    }
     
-    public native String getAddress();
+    private String getUserId() {
+        return "";
+    }
     
-    public native String getUserId();
+    @Override
+    public void onGroupInfoUpdate() {
+        mMainThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                int id = mGroupManager.getCurrentId();
+                String address = mGroupManager.getAddress(id);
+                if (id != mCurrentGroupId || address != null) {
+                    mCurrentGroupId = id;
+                    if (address != null) {
+                        MyQRCode qrcode = new MyQRCode(-1, 1);
+                        ImageView view = findViewById(R.id.qr_image);
+                        view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
+                        TextView text_userid = findViewById(R.id.text_groupid);
+                        text_userid.setText("当前为："+(id+1)+"群");
+                        TextView text_address = findViewById(R.id.txtAddress);
+                        text_address.setText(address);
+                    }
+                }
+                mAdapter.setData(mGroupManager.getGroupList());
+                
+            }
+        });
+    }
     
-    public native MemberInfo[] getMemberList();
+    @Override
+    public void onMemberListUpdate() {
+    
+    }
 }

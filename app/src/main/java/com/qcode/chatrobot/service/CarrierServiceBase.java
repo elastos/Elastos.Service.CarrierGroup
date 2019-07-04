@@ -1,0 +1,191 @@
+package com.qcode.chatrobot.service;
+
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
+import android.util.Log;
+
+import com.qcode.chatrobot.common.CarrierProxy;
+import com.qcode.chatrobot.common.CommonVar;
+import com.qcode.chatrobot.manager.MemberInfo;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class CarrierServiceBase extends Service {
+    public static final String TAG = "CarrierServiceBase";
+    private HandlerThread mWorkhandlerThread = null;
+    private Handler mWorkHandler = null;
+    private Context mContext = null;
+    private Timer mTimer = null;
+    private TimerTask mTimerTask = null;
+    private CarrierProxy mCarrierProxy;
+    private MemberInfo[] mMemberInfoList = null;
+    private int mServiceId;
+    static {
+        System.loadLibrary("chatrobot");
+    }
+    
+    @Override
+    public void onCreate() {
+        Log.d(TAG, "onCreate()'ed");
+        super.onCreate();
+        // Used to load the 'native-lib' library on application startup.
+        mCarrierProxy = new CarrierProxy();
+        this.Init();
+    }
+    
+    private void Init() {
+        Log.d(TAG, "Init()'ed");
+        mContext = getApplicationContext();
+        
+        //启动事务线程
+        mWorkhandlerThread = new HandlerThread("CarrierServiceThread");
+        mWorkhandlerThread.start();
+        Looper looper = mWorkhandlerThread.getLooper();
+        mWorkHandler = new Handler(looper);
+    
+        //updateMemberList();
+    }
+    
+    private void startWatchDog(){
+        if (mTimer == null) {
+            mTimer = new Timer();
+        }
+        if (mTimerTask == null) {
+            mTimerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    Log.d("CarrierService", "WatchDog");
+                }
+            };
+        } else {
+            mTimer.cancel();
+        }
+        
+        if(mTimer != null && mTimerTask != null ) {
+            mTimer.schedule(mTimerTask, 0, 2000);
+        }
+    }
+    
+    private void stopWatchDog(){
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+        
+        if (mTimerTask != null) {
+            mTimerTask.cancel();
+            mTimerTask = null;
+        }
+    }
+    
+    class IncomingHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            Bundle bundle = msg.getData();
+            Log.d(TAG, "IncomingHandler msg.what:" + msg.what);
+           
+            switch (msg.what) {
+                case CommonVar.Connected: {
+                    String data_path = bundle.getString("data_path");
+                    clientMessenger = msg.replyTo;
+                    Log.d(TAG, "IncomingHandler msg:" + msg);
+                    //启动service
+                    mCarrierProxy.startChatRobot(data_path);
+                    //启动聊天机器人
+                    mCarrierProxy.runChatRobot();
+                    sendCarrierAddress();
+                    break;
+                }
+                case CommonVar.Command_GetAddress: {
+                    sendCarrierAddress();
+                    break;
+                }
+                case CommonVar.Command_GetMemberList: {
+                    sendCarrierMemberList();
+                    break;
+                }
+            }
+        }
+    }
+    private void sendCarrierAddress() {
+        Log.d(TAG, "sendCarrierAddress");
+        if (clientMessenger != null) {
+            try {
+                String address = mCarrierProxy.getAddress();
+                Message reply_msg = new Message();
+                Bundle reply_bundle = new Bundle();
+                reply_msg.what = CommonVar.Command_GetAddress;
+                reply_bundle.putString("address", address);
+                reply_msg.setData(reply_bundle);
+                clientMessenger.send(reply_msg);
+                Log.d(TAG, "sendCarrierAddress address:"+address);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * 创建Messenger并传入Handler实例对象
+     */
+    final Messenger mMessenger = new Messenger(new IncomingHandler());
+    private Messenger clientMessenger = null;
+    /**
+     * 当绑定Service时,该方法被调用,将通过mMessenger返回一个实现
+     * IBinder接口的实例对象
+     */
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind()'ed");
+        return mMessenger.getBinder();
+    }
+    
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy()'ed");
+        mWorkhandlerThread.quit();
+        stopWatchDog();
+        super.onDestroy();
+    }
+    private void sendCarrierMemberList() {
+        Log.d(TAG, "sendCarrierMemberList");
+        if (clientMessenger != null) {
+            if (mMemberInfoList != null) {
+                synchronized (mMemberInfoList) {
+                    try {
+                        Message reply_msg = new Message();
+                        Bundle reply_bundle = new Bundle();
+                        reply_msg.what = CommonVar.Command_GetMemberList;
+                        reply_bundle.putParcelableArray("memberlist", mMemberInfoList);
+                        reply_msg.setData(reply_bundle);
+                        clientMessenger.send(reply_msg);
+                        Log.d(TAG, "sendCarrierMemberList memberlist:" + mMemberInfoList.toString());
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+    public void updateMemberList() {
+        synchronized (mMemberInfoList) {
+            mMemberInfoList = mCarrierProxy.getMemberList();
+            mWorkHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    updateMemberList();
+                }
+            }, 1000);
+        }
+    }
+}

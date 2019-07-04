@@ -9,26 +9,30 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import com.qcode.chatrobot.R;
+import com.qcode.chatrobot.manager.GroupInfo;
 import com.qcode.chatrobot.manager.MemberInfo;
 
-public class MemberListAdapter extends BaseAdapter {
+import java.util.List;
+
+public class GroupListAdapter extends BaseAdapter {
     private Context mContext;
-    private TextView mNickNameView;
-    private TextView mStatusView;
+    private TextView mAddressView;
+    private TextView mNumView;
     LayoutInflater mLayoutInflater;
-    private MemberInfo[] mMemberList;
-    public MemberListAdapter(LayoutInflater inflater) {
+    private List<GroupInfo> mGroupList;
+    public GroupListAdapter(LayoutInflater inflater) {
         mLayoutInflater = inflater;
     }
-    public void setData(MemberInfo[] userList) {
-        mMemberList = userList;
+    public void setData(List<GroupInfo>groupList) {
+        mGroupList = groupList;
         //refresh
         this.notifyDataSetChanged();
+        
     }
     
     @Override
     public int getCount() {
-        return mMemberList == null ? 0: mMemberList.length;
+        return mGroupList == null ? 0: mGroupList.size();
     }
     
     @Override
@@ -48,16 +52,22 @@ public class MemberListAdapter extends BaseAdapter {
     
         if (contentView==null) {
             //因为getView()返回的对象，adapter会自动赋给ListView
-            view = inflater.inflate(R.layout.member_item, null);
+            view = inflater.inflate(R.layout.item, null);
         }else{
             view=contentView;
-            Log.i("info","有缓存，不需要重新生成"+position);
         }
-        mNickNameView = (TextView) view.findViewById(R.id.memberName);//找到Textviewname
-        mNickNameView.setText(mMemberList[position].FriendId.substring(0, 20));//设置参数
-    
-        mStatusView = (TextView) view.findViewById(R.id.memberStatus);//找到Textviewage
-        mStatusView.setText(mMemberList[position].Status);//设置参数
+        
+        mAddressView = (TextView) view.findViewById(R.id.txtAddress);//找到Textviewname
+        String address = "";
+        GroupInfo groupInfo = mGroupList.get(position);
+        synchronized (groupInfo) {
+            if (groupInfo.mAddress != null) {
+                address = groupInfo.mAddress.substring(0, 15);
+            }
+            mAddressView.setText(address);//设置参数
+            mNumView = (TextView) view.findViewById(R.id.txtNum);//找到Textviewname
+            mNumView.setText("G: "+(mGroupList.get(position).mId+1));//设置参数
+        }
         return view;
     }
    }

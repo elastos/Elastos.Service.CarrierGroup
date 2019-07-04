@@ -13,11 +13,20 @@
         android:text="@string/robot_title"/>
 
     <ListView
-        android:id="@+id/memberList"
+        android:id="@+id/groupList"
         android:layout_width="900px"
-        android:layout_height="600dp"
-        android:layout_marginTop="200px"
-        android:layout_marginLeft="800px"
+        android:layout_height="280dp"
+        android:layout_marginTop="180px"
+        android:layout_marginLeft="350px"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="50px"
+        android:text="@string/create_btn"
+        android:id="@+id/createBtn"
         />
 
     <ImageView
@@ -25,27 +34,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:layout_marginLeft="230px"/>
+        android:layout_marginLeft="1350px"/>
 
     <TextView
-        android:id="@+id/text_address"
-        android:layout_width="700px"
+        android:id="@+id/text_groupid"
+        android:layout_width="512px"
         android:layout_height="wrap_content"
-        android:singleLine="false"
+        android:textAlignment="center"
         android:textSize="20dp"
-        android:layout_marginLeft="50px"
-        android:layout_marginTop="180px"
-        android:textColor="#ff999999"/>
-
-    <TextView
-        android:id="@+id/text_userid"
-        android:layout_width="700px"
-        android:layout_height="wrap_content"
-        android:singleLine="false"
-        android:textSize="20dp"
-        android:layout_marginLeft="50px"
+        android:layout_marginLeft="1350px"
         android:layout_marginTop="800px"
-        android:textColor="#ff999999"/>
-
-
+        android:textColor="#f1dd08"/>
 </FrameLayout>

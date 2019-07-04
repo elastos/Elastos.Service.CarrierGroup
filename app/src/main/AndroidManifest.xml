@@ -9,26 +9,125 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
-        <activity android:name=".MainActivity"
-                  android:launchMode="singleTask"
-                  android:configChanges="orientation|keyboardHidden|keyboard|screenSize|navigation"
-                  android:windowSoftInputMode="stateUnchanged|adjustPan"
-                  android:screenOrientation="sensorLandscape"
-                  android:hardwareAccelerated="true">
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|navigation"
+            android:hardwareAccelerated="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="stateUnchanged|adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService0"
+            android:exported="true"
+            android:process=":carrier0">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier0"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService1"
+            android:exported="true"
+            android:process=":carrier1">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier1"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService2"
+            android:exported="true"
+            android:process=":carrier2">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier2"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService3"
+            android:exported="true"
+            android:process=":carrier3">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier3"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService4"
+            android:exported="true"
+            android:process=":carrier4">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier4"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService5"
+            android:exported="true"
+            android:process=":carrier5">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier5"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService6"
+            android:exported="true"
+            android:process=":carrier6">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier6"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService7"
+            android:exported="true"
+            android:process=":carrier7">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier7"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService8"
+            android:exported="true"
+            android:process=":carrier8">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier8"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService9"
+            android:exported="true"
+            android:process=":carrier9">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier9"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService10"
+            android:exported="true"
+            android:process=":carrier10">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier10"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.qcode.chatrobot.service.CarrierService11"
+            android:exported="true"
+            android:process=":carrier11">
+            <intent-filter>
+                <action android:name="com.qcode.chatrobot.service.carrier11"/>
+            </intent-filter>
+        </service>
     </application>
+
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>/>
 </manifest>
