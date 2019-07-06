@@ -28,8 +28,12 @@ public class CarrierServiceBase extends Service {
     private Timer mTimer = null;
     private TimerTask mTimerTask = null;
     private CarrierProxy mCarrierProxy;
-    private MemberInfo[] mMemberInfoList = null;
+    private int mMemberNum = 0;
+    private String mGroupNickName = "";
+    private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
+    
     private int mServiceId;
+    
     static {
         System.loadLibrary("chatrobot");
     }
@@ -52,11 +56,10 @@ public class CarrierServiceBase extends Service {
         mWorkhandlerThread.start();
         Looper looper = mWorkhandlerThread.getLooper();
         mWorkHandler = new Handler(looper);
-    
-        //updateMemberList();
+        
     }
     
-    private void startWatchDog(){
+    private void startWatchDog() {
         if (mTimer == null) {
             mTimer = new Timer();
         }
@@ -71,12 +74,12 @@ public class CarrierServiceBase extends Service {
             mTimer.cancel();
         }
         
-        if(mTimer != null && mTimerTask != null ) {
+        if (mTimer != null && mTimerTask != null) {
             mTimer.schedule(mTimerTask, 0, 2000);
         }
     }
     
-    private void stopWatchDog(){
+    private void stopWatchDog() {
         if (mTimer != null) {
             mTimer.cancel();
             mTimer = null;
@@ -93,7 +96,7 @@ public class CarrierServiceBase extends Service {
         public void handleMessage(Message msg) {
             Bundle bundle = msg.getData();
             Log.d(TAG, "IncomingHandler msg.what:" + msg.what);
-           
+            
             switch (msg.what) {
                 case CommonVar.Connected: {
                     String data_path = bundle.getString("data_path");
@@ -104,19 +107,25 @@ public class CarrierServiceBase extends Service {
                     //启动聊天机器人
                     mCarrierProxy.runChatRobot();
                     sendCarrierAddress();
+                    updateMemberList();
                     break;
                 }
-                case CommonVar.Command_GetAddress: {
+                case CommonVar.Command_UpdateAddress: {
                     sendCarrierAddress();
                     break;
                 }
-                case CommonVar.Command_GetMemberList: {
-                    sendCarrierMemberList();
+                case CommonVar.Command_UpdateMemberCount: {
+                    sendCarrierMemberCount();
+                    break;
+                }
+                case CommonVar.Command_UpdateNickName: {
+                    sendCarrierNickName();
                     break;
                 }
             }
         }
     }
+    
     private void sendCarrierAddress() {
         Log.d(TAG, "sendCarrierAddress");
         if (clientMessenger != null) {
@@ -124,11 +133,11 @@ public class CarrierServiceBase extends Service {
                 String address = mCarrierProxy.getAddress();
                 Message reply_msg = new Message();
                 Bundle reply_bundle = new Bundle();
-                reply_msg.what = CommonVar.Command_GetAddress;
+                reply_msg.what = CommonVar.Command_UpdateAddress;
                 reply_bundle.putString("address", address);
                 reply_msg.setData(reply_bundle);
                 clientMessenger.send(reply_msg);
-                Log.d(TAG, "sendCarrierAddress address:"+address);
+                Log.d(TAG, "sendCarrierAddress address:" + address);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -140,6 +149,7 @@ public class CarrierServiceBase extends Service {
      */
     final Messenger mMessenger = new Messenger(new IncomingHandler());
     private Messenger clientMessenger = null;
+    
     /**
      * 当绑定Service时,该方法被调用,将通过mMessenger返回一个实现
      * IBinder接口的实例对象
@@ -157,35 +167,55 @@ public class CarrierServiceBase extends Service {
         stopWatchDog();
         super.onDestroy();
     }
-    private void sendCarrierMemberList() {
-        Log.d(TAG, "sendCarrierMemberList");
+    
+    private void sendCarrierMemberCount() {
+        Log.d(TAG, "sendCarrierMemberCount");
         if (clientMessenger != null) {
-            if (mMemberInfoList != null) {
-                synchronized (mMemberInfoList) {
-                    try {
-                        Message reply_msg = new Message();
-                        Bundle reply_bundle = new Bundle();
-                        reply_msg.what = CommonVar.Command_GetMemberList;
-                        reply_bundle.putParcelableArray("memberlist", mMemberInfoList);
-                        reply_msg.setData(reply_bundle);
-                        clientMessenger.send(reply_msg);
-                        Log.d(TAG, "sendCarrierMemberList memberlist:" + mMemberInfoList.toString());
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
+            synchronized (mCarrierProxy) {
+                try {
+                    Message reply_msg = new Message();
+                    Bundle reply_bundle = new Bundle();
+                    reply_msg.what = CommonVar.Command_UpdateMemberCount;
+                    reply_bundle.putInt("memberCount", mMemberNum);
+                    reply_msg.setData(reply_bundle);
+                    clientMessenger.send(reply_msg);
+                    Log.d(TAG, "sendCarrierMemberCount memberCount:" + mMemberNum);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    private void sendCarrierNickName() {
+        Log.d(TAG, "sendCarrierNickName");
+        if (clientMessenger != null) {
+            synchronized (mCarrierProxy) {
+                try {
+                    Message reply_msg = new Message();
+                    Bundle reply_bundle = new Bundle();
+                    reply_msg.what = CommonVar.Command_UpdateNickName;
+                    reply_bundle.putString("nickName", mGroupNickName);
+                    reply_msg.setData(reply_bundle);
+                    clientMessenger.send(reply_msg);
+                    Log.d(TAG, "sendCarrierNickName nickName:" + mGroupNickName);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
                 }
             }
         }
     }
     public void updateMemberList() {
-        synchronized (mMemberInfoList) {
-            mMemberInfoList = mCarrierProxy.getMemberList();
-            mWorkHandler.postDelayed(new Runnable() {
+        synchronized (mCarrierProxy) {
+            sendCarrierMemberCount();
+            sendCarrierNickName();
+            mMainThreadHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
+                    mMemberNum = mCarrierProxy.getMemberNum();
+                    mGroupNickName = mCarrierProxy.getNickName();
                     updateMemberList();
                 }
-            }, 1000);
+            }, 10000);
         }
     }
 }

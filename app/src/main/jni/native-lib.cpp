@@ -88,3 +88,19 @@ extern "C" {
         return infos;
     }
 }
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_qcode_chatrobot_common_CarrierProxy_getMemberNum(JNIEnv *env, jobject instance) {
+    std::shared_ptr<std::vector<std::shared_ptr<chatrobot::MemberInfo>>> memberlist = mCarrierRobot->getFriendList();
+    std::vector<std::shared_ptr<chatrobot::MemberInfo>> memberlist_vector = *memberlist.get();
+    int length = memberlist_vector.size();
+    return length;
+}extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_qcode_chatrobot_common_CarrierProxy_getNickName(JNIEnv *env, jobject instance) {
+    std::shared_ptr<std::string> nick_name = mCarrierRobot->getGroupNickName();
+    if (nick_name.get() != nullptr) {
+        return env->NewStringUTF(nick_name->c_str());
+    }
+    return env->NewStringUTF("");
+}

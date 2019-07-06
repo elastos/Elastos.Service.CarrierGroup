@@ -30,9 +30,9 @@ namespace chatrobot {
         void updateMemberInfo(std::shared_ptr<MemberInfo> memberinfo);
 
         std::shared_ptr<MemberInfo> getMemberInfo(std::shared_ptr<std::string> friendid);
-
         std::shared_ptr<MemberInfo> getMemberInfo(int index);
-
+        std::shared_ptr<std::string> getGroupNickName();
+        void updateGroupNickName(std::shared_ptr<std::string> nick_name);
         void
         addMessgae(std::shared_ptr<std::string> friend_id, std::string message,
                    std::time_t send_time);
@@ -49,14 +49,16 @@ namespace chatrobot {
         getMessages(std::shared_ptr<std::string> friend_id, std::time_t send_time, int max_limit);
 
     private:
+        std::mutex _SyncedGroupInfo;
         std::mutex _SyncedMemberList;
         std::mutex _SyncedMessageList;
         std::string mDbPath;
+        std::shared_ptr<std::string> mNickName;
         sqlite3 *mDb;
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> mMemberList;
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> mMessageList;
         void syncMemberList();
-
+        void syncGroupInfo();
         static int callback(void *context, int argc, char **argv, char **azColName);
 
     };

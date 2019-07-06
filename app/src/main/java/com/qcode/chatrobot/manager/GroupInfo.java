@@ -16,12 +16,13 @@ import java.util.List;
 public class GroupInfo implements Comparable<GroupInfo>{
     private static final String TAG = "GroupInfo";
     public String mAddress;
+    public String mNickName;
     public String mUserId;
     public String mClassName;
     public Messenger mClientMessanger;
     public Messenger mMessanger;
     public int mId;
-    public MemberInfo[] mMemberList = new MemberInfo[0];
+    public int mMemberCount;
     private GroupManager mGroupManager;
     
     public GroupInfo(GroupManager manager) {
@@ -37,9 +38,9 @@ public class GroupInfo implements Comparable<GroupInfo>{
     private class ClientHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            Log.i(TAG, "ClientHandler -> handleMessage");
+            Log.i(TAG, "ClientHandler -> handleMessage, msg:"+msg.toString());
             switch (msg.what) {
-                case CommonVar.Command_GetAddress: {
+                case CommonVar.Command_UpdateAddress: {
                      Bundle data = msg.getData();
                     if (data != null) {
                         final String address = data.getString("address");
@@ -50,18 +51,27 @@ public class GroupInfo implements Comparable<GroupInfo>{
                     }
                     break;
                 }
-                case CommonVar.Command_GetMemberList: {
+                case CommonVar.Command_UpdateMemberCount: {
                     Bundle data = msg.getData();
                     if (data != null) {
-                       MemberInfo[] memberlists = (MemberInfo[]) data.getParcelableArray("memberlist");
                         synchronized (GroupInfo.this) {
-                            mMemberList = memberlists;
-                            mGroupManager.onMemberListUpdate();
+                            mMemberCount = data.getInt("memberCount");
+                            mGroupManager.onGroupInfoUpdate();
                         }
                     }
                     break;
                 }
-                
+                case CommonVar.Command_UpdateNickName: {
+                    Bundle data = msg.getData();
+                    if (data != null) {
+                        final String nickname = data.getString("nickName");
+                        synchronized (GroupInfo.this) {
+                            mNickName = nickname;
+                            mGroupManager.onGroupInfoUpdate();
+                        }
+                    }
+                    break;
+                }
                 case CommonVar.Command_DeleteGroup:{
                     synchronized (GroupInfo.this) {
                         mGroupManager.removeGroup(mId);

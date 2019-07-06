@@ -53,7 +53,7 @@ namespace chatrobot {
         //消息直接入库
         int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG, "SQLite update updateMemberInfo error: %s\n",
+            Log::I(DatabaseProxy::TAG, "SQLite update updateMemberInfo error: %s\n",
                    errMsg);
         }
     }
@@ -93,6 +93,29 @@ namespace chatrobot {
         return std::shared_ptr<MemberInfo>(nullptr);
     }
 
+    std::shared_ptr<std::string> DatabaseProxy::getGroupNickName() {
+        return mNickName;
+    }
+
+    void DatabaseProxy::updateGroupNickName(std::shared_ptr<std::string> nick_name) {
+        MUTEX_LOCKER locker_sync_data(_SyncedGroupInfo);
+        std::string t_strSql = "";
+        char *errMsg = NULL;
+        if (mNickName.get() == nullptr) {
+            t_strSql = "insert into group_info_table values(NULL,'"+*nick_name.get()+"');";
+        } else {
+            t_strSql = "update group_info_table set NickName='"+*nick_name.get()+"' where id=1;";
+        }
+
+        //消息直接入库
+        int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
+        if (rv != SQLITE_OK) {
+            Log::I(TAG, "SQLite update updateGroupNickName error: %s\n",
+                   errMsg);
+        }
+        mNickName = nick_name;
+    }
+
     void DatabaseProxy::addMessgae(std::shared_ptr<std::string> friend_id,
                                    std::string message, std::time_t send_time) {
         MUTEX_LOCKER locker_sync_data(_SyncedMessageList);
@@ -106,7 +129,7 @@ namespace chatrobot {
                 //消息直接入库
         int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG, "SQLite addMessgae error: %s\n",
+            Log::I(DatabaseProxy::TAG, "SQLite addMessgae error: %s\n",
                    errMsg);
         }
     }
@@ -132,15 +155,15 @@ namespace chatrobot {
                 NULL
         );
         if (rc != SQLITE_OK) {
-            Log::D(Log::TAG, "sqlite3_prepare_v2 error:");
+            Log::I(TAG, "sqlite3_prepare_v2 error:");
             return std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>>(nullptr);
         }
 
         rc = sqlite3_get_table(mDb, t_strSql.c_str(), &azResult, &nrow, &ncolumn, &errMsg);
         if (rc == SQLITE_OK) {
-            Log::D(Log::TAG, "getMessages, successful sql:%s", t_strSql.c_str());
+            Log::I(TAG, "getMessages, successful sql:%s", t_strSql.c_str());
         } else {
-            Log::D(Log::TAG, "getMessages, Can't get table: %s", sqlite3_errmsg(mDb));
+            Log::I(TAG, "getMessages, Can't get table: %s", sqlite3_errmsg(mDb));
             return std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>>(nullptr);
         }
 
@@ -181,7 +204,7 @@ namespace chatrobot {
                 //消息直接入库
                 int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
                 if (rv != SQLITE_OK) {
-                    Log::D(DatabaseProxy::TAG, "SQLite removeMember error: %s\n",
+                    Log::I(DatabaseProxy::TAG, "SQLite removeMember error: %s\n",
                            errMsg);
                 }
                 member_info->UnLock();
@@ -189,7 +212,7 @@ namespace chatrobot {
             }
             member_info->UnLock();
         }
-        Log::D(Log::TAG, "removeMember not exist, friendid:%s", friendid.c_str());
+        Log::I(TAG, "removeMember not exist, friendid:%s", friendid.c_str());
         return false;
     }
 
@@ -197,7 +220,7 @@ namespace chatrobot {
         auto database_proxy = reinterpret_cast<DatabaseProxy *>(context);
         int i;
         for (i = 0; i < argc; ++i) {
-            Log::D(DatabaseProxy::TAG, "database %s = %s\n", azColName[i],
+            Log::I(DatabaseProxy::TAG, "database %s = %s\n", azColName[i],
                    argv[i] ? argv[i] : "NULL");
         }
         return 0;
@@ -208,6 +231,51 @@ namespace chatrobot {
             sqlite3_close(mDb);
         }
         return true;
+    }
+
+    void DatabaseProxy::syncGroupInfo() {
+        //查询一条记录
+        char **azResult;   //二维数组存放结果
+        char *errMsg = NULL;
+        int nrow;          /* Number of result rows written here */
+        int ncolumn;
+        std::string t_strSql;
+        t_strSql = "select * from group_info_table where id=1;";
+        /*step 2: sql语句对象。*/
+        sqlite3_stmt *pStmt;
+        int rc = sqlite3_prepare_v2(
+                mDb, //数据库连接对象
+                t_strSql.c_str(), //指向原始sql语句字符串
+                strlen(t_strSql.c_str()), //
+                &pStmt,
+                NULL
+        );
+        if (rc != SQLITE_OK) {
+            Log::I(TAG, "sqlite3_prepare_v2 error:%s", sqlite3_errmsg(mDb));
+            return;
+        }
+
+        rc = sqlite3_get_table(mDb, t_strSql.c_str(), &azResult, &nrow, &ncolumn, &errMsg);
+        if (rc == SQLITE_OK) {
+            Log::I(TAG, "syncGroupInfo, successful sql:%s", t_strSql.c_str());
+        } else {
+            Log::I(TAG, "syncGroupInfo, Can't get table: %s", sqlite3_errmsg(mDb));
+            return;
+        }
+        Log::I(TAG, "syncGroupInfo,nrow:%d, ncolumn:%d", nrow, ncolumn);
+        if (nrow != 0 && ncolumn != 0) {     //有查询结果,不包含表头所占行数
+            for (int i = 1; i <= nrow; i++) {        // 第0行为数据表头
+                mNickName =  std::make_shared<std::string>(azResult[2*i + 1]);
+                Log::I(TAG, "syncGroupInfo,azResult[2*i + 0]:%s, azResult[2*i + 1]: %s", azResult[2*i + 0],azResult[2*i + 1]);
+                break;
+            }
+        }
+        if (mNickName.get() != nullptr) {
+            Log::I(TAG, "syncGroupInfo,mNickName: %s", mNickName->c_str());
+        }
+
+        sqlite3_free_table(azResult);
+        sqlite3_finalize(pStmt);     //销毁一个SQL语句对象
     }
 
     void DatabaseProxy::syncMemberList() {
@@ -229,15 +297,15 @@ namespace chatrobot {
                 NULL
         );
         if (rc != SQLITE_OK) {
-            Log::D(Log::TAG, "sqlite3_prepare_v2 error:%s", sqlite3_errmsg(mDb));
+            Log::I(TAG, "sqlite3_prepare_v2 error:%s", sqlite3_errmsg(mDb));
             return;
         }
 
         rc = sqlite3_get_table(mDb, t_strSql.c_str(), &azResult, &nrow, &ncolumn, &errMsg);
         if (rc == SQLITE_OK) {
-            Log::D(Log::TAG, "getMessages, successful sql:%s", t_strSql.c_str());
+            Log::I(TAG, "syncMemberList, successful sql:%s", t_strSql.c_str());
         } else {
-            Log::D(Log::TAG, "getMessages, Can't get table: %s", sqlite3_errmsg(mDb));
+            Log::I(TAG, "syncMemberList, Can't get table: %s", sqlite3_errmsg(mDb));
             return;
         }
 
@@ -262,38 +330,46 @@ namespace chatrobot {
         int rv;
         rv = sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG, "sqlite3_config error: %d\n", rv);
+            Log::I(DatabaseProxy::TAG, "sqlite3_config error: %d\n", rv);
             return 1;
         }
         rv = sqlite3_open(strConn.c_str(), &mDb);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG, "Cannot open database: %s\n", sqlite3_errmsg(mDb));
+            Log::I(DatabaseProxy::TAG, "Cannot open database: %s\n", sqlite3_errmsg(mDb));
             sqlite3_close(mDb);
             return 1;
         }
         char create_table[256] = "CREATE TABLE IF NOT EXISTS member_table(id INTEGER PRIMARY KEY AUTOINCREMENT,Friendid TEXT NOT NULL, NickName TEXT, Status INTEGER, MsgTimeStamp INTEGER)";
         rv = sqlite3_exec(mDb, create_table, callback, this, &errMsg);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG, "SQLite create_table statement execution error: %s\n",
+            Log::I(DatabaseProxy::TAG, "SQLite create_table statement execution error: %s\n",
                    errMsg);
             return 1;
         }
         char create_message_table[256] = "CREATE TABLE IF NOT EXISTS message_table (id INTEGER PRIMARY KEY AUTOINCREMENT,Friendid TEXT NOT NULL, Msg TEXT, SendTimeStamp INTEGER)";
         rv = sqlite3_exec(mDb, create_message_table, callback, this, &errMsg);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG,
+            Log::I(DatabaseProxy::TAG,
                    "SQLite create_message_table statement execution error: %s\n", errMsg);
             return 1;
         }
         char create_blackmember_table[256] = "CREATE TABLE IF NOT EXISTS black_member_table (id INTEGER PRIMARY KEY AUTOINCREMENT,Friendid TEXT NOT NULL)";
         rv = sqlite3_exec(mDb, create_blackmember_table, callback, this, &errMsg);
         if (rv != SQLITE_OK) {
-            Log::D(DatabaseProxy::TAG,
+            Log::I(DatabaseProxy::TAG,
                    "SQLite create_blackmember_table statement execution error: %s\n", errMsg);
+            return 1;
+        }
+        char create_groupInfo_table[256] = "CREATE TABLE IF NOT EXISTS group_info_table (id INTEGER PRIMARY KEY AUTOINCREMENT,NickName TEXT NOT NULL)";
+        rv = sqlite3_exec(mDb, create_groupInfo_table, callback, this, &errMsg);
+        if (rv != SQLITE_OK) {
+            Log::I(DatabaseProxy::TAG,
+                   "SQLite group_info_table statement execution error: %s\n", errMsg);
             return 1;
         }
         //同步Member信息
         syncMemberList();
+        syncGroupInfo();
         return 0;
     }
 }

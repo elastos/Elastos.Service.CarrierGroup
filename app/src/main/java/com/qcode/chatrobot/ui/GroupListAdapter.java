@@ -16,7 +16,7 @@ import java.util.List;
 
 public class GroupListAdapter extends BaseAdapter {
     private Context mContext;
-    private TextView mAddressView;
+    private TextView mNickView;
     private TextView mNumView;
     LayoutInflater mLayoutInflater;
     private List<GroupInfo> mGroupList;
@@ -56,17 +56,19 @@ public class GroupListAdapter extends BaseAdapter {
         }else{
             view=contentView;
         }
-        
-        mAddressView = (TextView) view.findViewById(R.id.txtAddress);//找到Textviewname
-        String address = "";
+    
+        mNickView = (TextView) view.findViewById(R.id.txtNickName);//找到Textviewname
+        String nickname = "";
         GroupInfo groupInfo = mGroupList.get(position);
         synchronized (groupInfo) {
-            if (groupInfo.mAddress != null) {
-                address = groupInfo.mAddress.substring(0, 15);
+            if (groupInfo.mNickName != null && !groupInfo.mNickName.isEmpty()) {
+                nickname = groupInfo.mNickName;
+            } else if (groupInfo.mAddress != null) {
+                nickname = groupInfo.mAddress.substring(0, 10);
             }
-            mAddressView.setText(address);//设置参数
+            mNickView.setText(nickname);//设置参数
             mNumView = (TextView) view.findViewById(R.id.txtNum);//找到Textviewname
-            mNumView.setText("G: "+(mGroupList.get(position).mId+1));//设置参数
+            mNumView.setText(" 人数： "+mGroupList.get(position).mMemberCount);//设置参数
         }
         return view;
     }

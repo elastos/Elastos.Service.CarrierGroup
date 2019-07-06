@@ -410,6 +410,19 @@ namespace chatrobot {
         }
 
     }
+
+    std::shared_ptr<std::string> CarrierRobot::getGroupNickName() {
+        std::shared_ptr<std::string> nick_name = mDatabaseProxy->getGroupNickName();
+        return nick_name;
+    }
+
+    void CarrierRobot::updateNickNameCmd(const std::vector<std::string> &args) {
+        if(args.size() >= 2) {
+            const std::string nick_name = args[1];
+            mDatabaseProxy->updateGroupNickName(std::make_shared<std::string>(nick_name));
+        }
+    }
+
     void CarrierRobot::delCmd(const std::vector<std::string> &args) {
         if(args.size() >= 3) {
             const std::string friend_id = args[2];

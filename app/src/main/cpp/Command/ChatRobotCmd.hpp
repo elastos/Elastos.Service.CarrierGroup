@@ -53,6 +53,11 @@ private:
     static int ListFriends(void* context,
                            const std::vector<std::string>& args,
                            std::string& errMsg);
+
+    static int UpdateNickName(void* context,
+                           const std::vector<std::string>& args,
+                           std::string& errMsg);
+
     static int PrintInfo(void* context,
                          const std::vector<std::string>& args,
                          std::string& errMsg);

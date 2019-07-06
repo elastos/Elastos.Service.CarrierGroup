@@ -36,16 +36,12 @@ public class GroupManager {
     
     public interface GroupListener {
         void onGroupInfoUpdate();
-        
-        void onMemberListUpdate();
     }
     
     private GroupListener mGroupListener;
-    
     public GroupManager(Context context) {
         mContext = context;
     }
-    
     public void recoveryGroup() {
         synchronized (mGroupList) {
             SharedPreferences sharedPreferences = getPerf();
@@ -55,11 +51,12 @@ public class GroupManager {
                     JSONArray grouplist_json = new JSONArray(grouplist);
                     for (int i = 0; i < grouplist_json.length(); i++) {
                         JSONObject groupinfo = grouplist_json.getJSONObject(i);
-                        int id = groupinfo.getInt("id");
+                        final int id = groupinfo.getInt("id");
                         if (i == 0) {
                             mCurrentId = id;
                         }
                         bindService(id);
+                       
                     }
                     mServiceNum = grouplist_json.length();
                     
@@ -78,6 +75,9 @@ public class GroupManager {
                 for (int i = 0; i < mGroupList.size(); i++) {
                     JSONObject group_info = new JSONObject();
                     try {
+                        group_info.put("membercount", mGroupList.get(i).mMemberCount);
+                        group_info.put("nickname", mGroupList.get(i).mNickName);
+                        group_info.put("address", mGroupList.get(i).mAddress);
                         group_info.put("id", mGroupList.get(i).mId);
                         group_list.put(group_info);
                     } catch (JSONException e) {
@@ -121,7 +121,12 @@ public class GroupManager {
             bindService(service_id);
         }
     }
-    
+    public void stopService(int service_num) {
+        Intent service_intent = new Intent(CommonVar.CONST_CARRIER_SERVICE_ACTION + service_num);
+        service_intent.setPackage(CommonVar.CONST_CARRIER_SERVICE_PACKAGE_NMAE);
+        boolean ret = mContext.stopService(service_intent);
+        
+    }
     public void bindService(int service_num) {
         //绑定Service
         Intent service_intent = new Intent(CommonVar.CONST_CARRIER_SERVICE_ACTION + service_num);
@@ -139,15 +144,12 @@ public class GroupManager {
                 GroupInfo group_info = mGroupList.get(i);
                 if (group_info.mId == id) {
                     mGroupList.remove(i);
+                    //停止服务
+                    stopService(id);
                     break;
                 }
             }
-        }
-    }
-    
-    public void onMemberListUpdate() {
-        if (mGroupListener != null) {
-            mGroupListener.onMemberListUpdate();
+           
         }
     }
     
@@ -178,12 +180,12 @@ public class GroupManager {
         return mCurrentId;
     }
     
-    public String getAddress(int id) {
+    public GroupInfo getGroupInfo(int id) {
         synchronized (mGroupList) {
             for (int i = 0; i < mGroupList.size(); i++) {
                 GroupInfo group_info = mGroupList.get(i);
                 if (group_info.mId == id) {
-                    return group_info.mAddress;
+                    return group_info;
                 }
             }
             
@@ -191,12 +193,12 @@ public class GroupManager {
         }
     }
     
-    public MemberInfo[] getMemberList(int id) {
+    public String getAddress(int id) {
         synchronized (mGroupList) {
             for (int i = 0; i < mGroupList.size(); i++) {
                 GroupInfo group_info = mGroupList.get(i);
                 if (group_info.mId == id) {
-                    return group_info.mMemberList;
+                    return group_info.mAddress;
                 }
             }
             
@@ -224,10 +226,14 @@ public class GroupManager {
             final Message msg = Message.obtain(null, 1, 0, 0);
             synchronized (mGroupList) {
                 String class_name = name.getClassName();
+                int id = Integer.parseInt(class_name.substring(CommonVar.CONST_CARRIER_SERVICE_BASENAME.length()));
+                if (getGroupInfo(id) != null) {
+                    return;
+                }
                 final GroupInfo groupInfo = new GroupInfo(GroupManager.this);
                 groupInfo.mClassName = class_name;
                 groupInfo.mMessanger = messenger;
-                groupInfo.mId = Integer.parseInt(class_name.substring(CommonVar.CONST_CARRIER_SERVICE_BASENAME.length()));
+                groupInfo.mId = id;
                 
                 msg.replyTo = groupInfo.mClientMessanger;
                 Bundle bundle = new Bundle();
@@ -239,6 +245,7 @@ public class GroupManager {
                 } catch (Exception e) {
                     Log.i(TAG, "客户端向service发送消息失败: " + e.getMessage());
                 }
+                
                 mGroupList.add(groupInfo);
                 //排序
                 Collections.sort(mGroupList);
@@ -253,10 +260,11 @@ public class GroupManager {
             Log.v(TAG, "CarrierService onServiceDisconnected");
             String class_name = name.getClassName();
             final int index = Integer.parseInt(class_name.substring(CommonVar.CONST_CARRIER_SERVICE_BASENAME.length()));
-            synchronized (mGroupList) {
-                mGroupList.remove(index);
-            }
-            
+            /*synchronized (mGroupList) {
+                if (mGroupList.size() > index) {
+                    mGroupList.remove(index);
+                }
+            }*/
         }
     };
     

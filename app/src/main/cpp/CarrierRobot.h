@@ -60,6 +60,8 @@ namespace chatrobot {
         void helpCmd(const std::vector<std::string> &args, const std::string& message);
         void listCmd(const std::vector<std::string> &args);
         void delCmd(const std::vector<std::string> &args);
+        void updateNickNameCmd(const std::vector<std::string> &args);
+        std::shared_ptr<std::string> getGroupNickName();
     private:
         static CarrierRobot* instance;
 

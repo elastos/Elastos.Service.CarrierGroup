@@ -14,6 +14,7 @@ const std::vector<ChatRobotCmd::CommandInfo> ChatRobotCmd::gCommandInfoList{
         {"d", "del",   ChatRobotCmd::DelFriend,       "Delete a friend"},
         //{'i', "info",  ChatRobotCmd::PrintInfo, "Print friend's detail infommation"},
         {"l", "list",  ChatRobotCmd::ListFriends,     "List friends."},
+        {"u", "update",  ChatRobotCmd::UpdateNickName,     "Update group name"},
 
 };
 
@@ -137,6 +138,13 @@ int ChatRobotCmd::ListFriends(void* context,
                        std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
     carrier_robot->listCmd(args);
+    return 0;
+}
+
+int ChatRobotCmd::UpdateNickName(void *context, const std::vector<std::string> &args,
+                                 std::string &errMsg) {
+    auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
+    carrier_robot->updateNickNameCmd(args);
     return 0;
 }
 

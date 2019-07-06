@@ -15,5 +15,7 @@ public class CarrierProxy {
     
     public native String getUserId();
     
-    public native MemberInfo[] getMemberList();
+    public native int getMemberNum();
+    
+    public native String getNickName();
 }
