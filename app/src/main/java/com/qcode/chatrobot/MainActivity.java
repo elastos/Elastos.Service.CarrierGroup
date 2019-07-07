@@ -41,13 +41,15 @@ public class MainActivity extends Activity implements GroupListener {
         mGroupListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mGroupManager.switchGroup(position);
+                GroupInfo groupInfo = mGroupManager.getGroupList().get(position);
+                mGroupManager.switchGroup(groupInfo.mId);
             }
         });
         mGroupListView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                mGroupManager.switchGroup(position);
+                GroupInfo groupInfo = mGroupManager.getGroupList().get(position);
+                mGroupManager.switchGroup(groupInfo.mId);
             }
             
             @Override
@@ -72,6 +74,8 @@ public class MainActivity extends Activity implements GroupListener {
         });
         
         mAdapter.setData(mGroupManager.getGroupList());
+    
+        showGroupInfo();
     }
     
     @Override
@@ -89,13 +93,12 @@ public class MainActivity extends Activity implements GroupListener {
         return "";
     }
     
-    @Override
-    public void onGroupInfoUpdate() {
-        mMainThreadHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                int id = mGroupManager.getCurrentId();
-                String address = mGroupManager.getAddress(id);
+    private void showGroupInfo() {
+        int id = mGroupManager.getCurrentId();
+        GroupInfo groupInfo =  mGroupManager.getGroupInfo(id);
+        if (groupInfo != null) {
+            synchronized (groupInfo) {
+                String address = groupInfo.mAddress;
                 if (id != mCurrentGroupId || address != null) {
                     mCurrentGroupId = id;
                     if (address != null) {
@@ -104,12 +107,19 @@ public class MainActivity extends Activity implements GroupListener {
                         view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
                         TextView text_userid = findViewById(R.id.text_groupid);
                         text_userid.setText("当前为："+(id+1)+"群");
-                        TextView text_address = findViewById(R.id.txtNickName);
-                        text_address.setText(address);
                     }
                 }
-                mAdapter.setData(mGroupManager.getGroupList());
-                
+            }
+        }
+        //更新列表信息
+        mAdapter.setData(mGroupManager.getGroupList());
+    }
+    @Override
+    public void onGroupInfoUpdate() {
+        mMainThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                showGroupInfo();
             }
         });
     }

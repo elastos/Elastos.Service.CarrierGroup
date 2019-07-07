@@ -61,7 +61,9 @@ namespace chatrobot {
         void listCmd(const std::vector<std::string> &args);
         void delCmd(const std::vector<std::string> &args);
         void updateNickNameCmd(const std::vector<std::string> &args);
+        void deleteGroupCmd(const std::vector<std::string> &args);
         std::shared_ptr<std::string> getGroupNickName();
+        int getGroupStatus();
     private:
         static CarrierRobot* instance;
 
@@ -72,10 +74,12 @@ namespace chatrobot {
         std::shared_ptr<std::regex> mMsgReg;
         std::mutex _mReplyMessage;
         std::thread mCarrieryThread;
+        std::shared_ptr<std::string> mLocalPath;
         std::shared_ptr<std::string> mCreaterFriendId;
         std::unique_ptr<ElaCarrier, std::function<void(ElaCarrier*)>> mCarrier;
         std::shared_ptr<CarrierConfig> mCarrierConfig;
         std::shared_ptr<DatabaseProxy> mDatabaseProxy;
+        int mStatus;
     };
 }
 

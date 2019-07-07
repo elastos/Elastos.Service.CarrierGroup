@@ -18,4 +18,5 @@ public class CarrierProxy {
     public native int getMemberNum();
     
     public native String getNickName();
+    public native int getGroupStatus();//-1:delete,0:ok
 }

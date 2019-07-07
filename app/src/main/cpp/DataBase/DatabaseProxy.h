@@ -44,7 +44,6 @@ namespace chatrobot {
         bool startDb(const char *data_dir);
 
         bool closeDb();
-
         std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>>
         getMessages(std::shared_ptr<std::string> friend_id, std::time_t send_time, int max_limit);
 
@@ -52,7 +51,6 @@ namespace chatrobot {
         std::mutex _SyncedGroupInfo;
         std::mutex _SyncedMemberList;
         std::mutex _SyncedMessageList;
-        std::string mDbPath;
         std::shared_ptr<std::string> mNickName;
         sqlite3 *mDb;
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> mMemberList;

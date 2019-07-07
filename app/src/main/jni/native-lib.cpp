@@ -103,4 +103,8 @@ Java_com_qcode_chatrobot_common_CarrierProxy_getNickName(JNIEnv *env, jobject in
         return env->NewStringUTF(nick_name->c_str());
     }
     return env->NewStringUTF("");
+}extern "C"
+JNIEXPORT jint JNICALL
+Java_com_qcode_chatrobot_common_CarrierProxy_getGroupStatus(JNIEnv *env, jobject instance) {
+   return mCarrierRobot->getGroupStatus();
 }

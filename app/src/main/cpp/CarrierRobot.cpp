@@ -66,6 +66,7 @@ namespace chatrobot {
         //anypeer Id format
         std::string reg_str("(\\w{8})-(\\w{4})-(\\w{4})-(\\w{4})-(\\w{13})");
         mMsgReg = std::make_shared<std::regex>(reg_str,std::regex::icase);
+        mStatus = 0;
     }
 
     int CarrierRobot::GetCarrierUsrIdByAddress(const std::string &address, std::string &usrId) {
@@ -245,6 +246,7 @@ namespace chatrobot {
     int CarrierRobot::start(const char *data_dir) {
         ElaOptions carrierOpts;
         ElaCallbacks carrierCallbacks;
+        mLocalPath = std::make_shared<std::string>(data_dir);
         mDatabaseProxy->startDb(data_dir);
         memset(&carrierOpts, 0, sizeof(carrierOpts));
         memset(&carrierCallbacks, 0, sizeof(carrierCallbacks));
@@ -411,15 +413,52 @@ namespace chatrobot {
 
     }
 
+    int CarrierRobot::getGroupStatus() {
+        return mStatus;
+    }
     std::shared_ptr<std::string> CarrierRobot::getGroupNickName() {
         std::shared_ptr<std::string> nick_name = mDatabaseProxy->getGroupNickName();
         return nick_name;
     }
 
     void CarrierRobot::updateNickNameCmd(const std::vector<std::string> &args) {
+        MUTEX_LOCKER locker_sync_data(_mReplyMessage);
+        if(args.size() >= 3) {
+            const std::string friend_id = args[2];
+            if ((*mCreaterFriendId.get()).compare((friend_id)) == 0) {
+                const std::string nick_name = args[1];
+                mDatabaseProxy->updateGroupNickName(std::make_shared<std::string>(nick_name));
+            }
+        }
+    }
+
+    void CarrierRobot::deleteGroupCmd(const std::vector<std::string> &args) {
+        MUTEX_LOCKER locker_sync_data(_mReplyMessage);
         if(args.size() >= 2) {
-            const std::string nick_name = args[1];
-            mDatabaseProxy->updateGroupNickName(std::make_shared<std::string>(nick_name));
+            const std::string friend_id = args[1];
+            if ((*mCreaterFriendId.get()).compare((friend_id)) == 0) {
+                mStatus = -1;
+                //好友解除关系
+                std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> memberlist = mDatabaseProxy->getFriendList();
+                for (int i = 0; i < memberlist->size(); i++) {
+                    std::shared_ptr<MemberInfo> memberInfo = memberlist->at(i);
+                    if (memberInfo.get() == nullptr) {
+                        continue;
+                    }
+                    memberInfo->Lock();
+                    int ela_ret = ela_remove_friend(mCarrier.get(),
+                                                    memberInfo->mFriendid.get()->c_str());
+                    if (ela_ret != 0) {
+                        Log::I(Log::TAG,
+                               "deleteGroupCmd can't delete this user: %s errno:(0x%x)",
+                               memberInfo->mFriendid.get()->c_str(), ela_get_error());
+                    }
+                    memberInfo->UnLock();
+                }
+                //删除文件
+                Log::I(TAG, "deleteGroupCmd, local path:%s", mLocalPath->c_str());
+                std::remove(mLocalPath->c_str());
+            }
         }
     }
 

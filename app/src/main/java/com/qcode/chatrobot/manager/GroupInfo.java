@@ -1,6 +1,8 @@
 package com.qcode.chatrobot.manager;
 
 import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,10 +21,13 @@ public class GroupInfo implements Comparable<GroupInfo>{
     public String mNickName;
     public String mUserId;
     public String mClassName;
+    public String mDataDir;
     public Messenger mClientMessanger;
     public Messenger mMessanger;
     public int mId;
     public int mMemberCount;
+    public ServiceConnection mServiceConnection;
+    public Intent mServiceIntent;
     private GroupManager mGroupManager;
     
     public GroupInfo(GroupManager manager) {
@@ -72,15 +77,27 @@ public class GroupInfo implements Comparable<GroupInfo>{
                     }
                     break;
                 }
-                case CommonVar.Command_DeleteGroup:{
+                
+                case CommonVar.Command_UpdateStatus:{
                     synchronized (GroupInfo.this) {
-                        mGroupManager.removeGroup(mId);
-                        mGroupManager.onGroupInfoUpdate();
+                        Bundle data = msg.getData();
+                        if (data != null) {
+                            final int status = data.getInt("status");
+                            if (status == -1) {
+                                mGroupManager.removeGroup(mId);
+                                mGroupManager.onGroupInfoUpdate();
+                            }
+                        }
                     }
                     break;
                 }
+               /* case CommonVar.Command_WatchDog:{
+                    synchronized (GroupInfo.this) {
+                        //TODO
+                    }
+                    break;
+                }*/
             }
-            
         }
     }
 }

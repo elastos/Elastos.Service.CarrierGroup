@@ -9,6 +9,7 @@ public class CommonVar {
     public static final int Command_UpdateAddress = 2;
     public static final int Command_UpdateMemberCount = 3;
     public static final int Command_UpdateNickName = 4;
-    public static final int Command_DeleteGroup = 5;
+    public static final int Command_UpdateStatus = 5;
+    public static final int Command_WatchDog= 6;
     
 }

@@ -30,6 +30,8 @@ public class CarrierServiceBase extends Service {
     private CarrierProxy mCarrierProxy;
     private int mMemberNum = 0;
     private String mGroupNickName = "";
+    private int mGroupStatus = 0;
+    
     private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     
     private int mServiceId;
@@ -46,6 +48,7 @@ public class CarrierServiceBase extends Service {
         mCarrierProxy = new CarrierProxy();
         this.Init();
     }
+    
     
     private void Init() {
         Log.d(TAG, "Init()'ed");
@@ -107,7 +110,7 @@ public class CarrierServiceBase extends Service {
                     //启动聊天机器人
                     mCarrierProxy.runChatRobot();
                     sendCarrierAddress();
-                    updateMemberList();
+                    updateGroupInfo();
                     break;
                 }
                 case CommonVar.Command_UpdateAddress: {
@@ -165,6 +168,7 @@ public class CarrierServiceBase extends Service {
         Log.d(TAG, "onDestroy()'ed");
         mWorkhandlerThread.quit();
         stopWatchDog();
+        System.exit(0);
         super.onDestroy();
     }
     
@@ -186,6 +190,7 @@ public class CarrierServiceBase extends Service {
             }
         }
     }
+    
     private void sendCarrierNickName() {
         Log.d(TAG, "sendCarrierNickName");
         if (clientMessenger != null) {
@@ -204,18 +209,41 @@ public class CarrierServiceBase extends Service {
             }
         }
     }
-    public void updateMemberList() {
+    private void sendCarrierGroupStatus() {
+        Log.d(TAG, "sendCarrierGroupStatus");
+        if (clientMessenger != null) {
+            synchronized (mCarrierProxy) {
+                try {
+                    Message reply_msg = new Message();
+                    Bundle reply_bundle = new Bundle();
+                    reply_msg.what = CommonVar.Command_UpdateStatus;
+                    reply_bundle.putInt("status", mGroupStatus);
+                    reply_msg.setData(reply_bundle);
+                    clientMessenger.send(reply_msg);
+                    Log.d(TAG, "sendCarrierGroupStatus mGroupStatus:" + mGroupStatus);
+                    
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    public void updateGroupInfo() {
         synchronized (mCarrierProxy) {
             sendCarrierMemberCount();
             sendCarrierNickName();
+            sendCarrierGroupStatus();
+            
             mMainThreadHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     mMemberNum = mCarrierProxy.getMemberNum();
                     mGroupNickName = mCarrierProxy.getNickName();
-                    updateMemberList();
+                    mGroupStatus = mCarrierProxy.getGroupStatus();
+                    updateGroupInfo();
                 }
             }, 10000);
         }
     }
+    
 }
