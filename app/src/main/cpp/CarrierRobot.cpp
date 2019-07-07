@@ -183,6 +183,9 @@ namespace chatrobot {
             std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(
                     memberInfo->mFriendid, memberInfo->mMsgTimeStamp, 100);
             if (message_list.get() != nullptr) {
+                /*if (message_list->size() >= 1) {
+                    Log::D(TAG, "member nick:%s, getmsg time:%s, msg size:%d", memberInfo->mNickName.get()->c_str(), this->convertDatetimeToString(memberInfo->mMsgTimeStamp).c_str(), message_list->size());
+                }*/
                 for (int i = 0; i < message_list->size(); i++) {
                     std::shared_ptr<MessageInfo> message = message_list->at(i);
                     if (message.get() != nullptr) {
@@ -204,8 +207,12 @@ namespace chatrobot {
                         if (msg_ret != 0) {
                             break;
                         }
+                        std::this_thread::sleep_for (std::chrono::milliseconds(10));
                         info_changed = true;
                         memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
+                        /*if (message_list->size() >= 1) {
+                            Log::D(TAG, "member nick:%s,  mMsgTimeStamp time:%s, msg:%s", memberInfo->mNickName.get()->c_str(), this->convertDatetimeToString(memberInfo->mMsgTimeStamp).c_str(), msg);
+                        }*/
                     }
                 }
             }
