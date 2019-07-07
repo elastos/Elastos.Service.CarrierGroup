@@ -35,6 +35,7 @@ namespace chatrobot {
         int start(const char* data_dir);
         void stop();
         int getAddress(std::string& address);
+        int acceptFriend(std::shared_ptr<std::string>friendid);
         int getUserId(std::string& userid);
         static void OnCarrierConnection(ElaCarrier *carrier,
                                                ElaConnectionStatus status, void *context);
@@ -52,7 +53,7 @@ namespace chatrobot {
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
         void runCarrierInner();
         void runCarrier();
-
+        bool inRemovedList(std::shared_ptr<std::string> friendid);
         void updateMemberInfo(std::shared_ptr<std::string> friendid, std::shared_ptr<std::string> nickname,
                               ElaConnectionStatus status);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
@@ -60,6 +61,7 @@ namespace chatrobot {
         void helpCmd(const std::vector<std::string> &args, const std::string& message);
         void listCmd(const std::vector<std::string> &args);
         void delCmd(const std::vector<std::string> &args);
+        void blockFriendCmd(const std::vector<std::string> &args);
         void updateNickNameCmd(const std::vector<std::string> &args);
         void deleteGroupCmd(const std::vector<std::string> &args);
         std::shared_ptr<std::string> getGroupNickName();

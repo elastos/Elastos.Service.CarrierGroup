@@ -11,11 +11,15 @@ namespace chatrobot {
     DatabaseProxy::DatabaseProxy() {
         mMessageList = std::make_shared<std::vector<std::shared_ptr<MessageInfo>>>();
         mMemberList = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+        mBlockMemberList = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
+        mRemovedMemberList = std::make_shared<std::vector<std::shared_ptr<MemberInfo>>>();
     }
 
     DatabaseProxy::~DatabaseProxy() {
         mMemberList.reset();
         mMessageList.reset();
+        mBlockMemberList.reset();
+        mRemovedMemberList.reset();
     }
 
     void DatabaseProxy::updateMemberInfo(std::shared_ptr<MemberInfo> target_memberinfo) {
@@ -92,7 +96,58 @@ namespace chatrobot {
         }
         return std::shared_ptr<MemberInfo>(nullptr);
     }
+    bool DatabaseProxy::deleteRemovedListMember(std::string friendid) {
+        MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
+        for (int i = 0; i < mRemovedMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mRemovedMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
+            }
+            member_info->Lock();
+            if(member_info->mFriendid->compare(friendid) == 0) {
+                mRemovedMemberList->push_back(member_info);
+                mRemovedMemberList->erase(std::begin(*mRemovedMemberList.get()) + i);
+                member_info->UnLock();
+                return true;
+            }
+            member_info->UnLock();
+        }
+        return false;
+    }
 
+    std::shared_ptr<MemberInfo>
+    DatabaseProxy::getBlockMemberInfo(std::shared_ptr<std::string> friendid) {
+        MUTEX_LOCKER locker_sync_data(_SyncedBlockMemberList);
+        for (int i = 0; i < mBlockMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mBlockMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
+            }
+            member_info->Lock();
+            if (member_info->mFriendid->compare(*friendid.get()) == 0) {
+                member_info->UnLock();
+                return member_info;
+            }
+            member_info->UnLock();
+        }
+        return std::shared_ptr<MemberInfo>(nullptr);
+    }
+    std::shared_ptr<MemberInfo> DatabaseProxy::getBlockMemberInfo(int index) {
+        MUTEX_LOCKER locker_sync_data(_SyncedBlockMemberList);
+        for (int i = 0; i < mBlockMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mBlockMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
+            }
+            member_info->Lock();
+            if (member_info->mIndex == index) {
+                member_info->UnLock();
+                return member_info;
+            }
+            member_info->UnLock();
+        }
+        return std::shared_ptr<MemberInfo>(nullptr);
+    }
     std::shared_ptr<std::string> DatabaseProxy::getGroupNickName() {
         return mNickName;
     }
@@ -187,7 +242,24 @@ namespace chatrobot {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         return mMemberList;
     }
+    bool DatabaseProxy::inRemovedList(std::string friendid) {
+        MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
+        for (int i = 0; i < mRemovedMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mRemovedMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
+            }
+            member_info->Lock();
+            if(member_info->mFriendid->compare(friendid) == 0) {
+                member_info->UnLock();
+                return true;
+            }
+            member_info->UnLock();
+        }
 
+        Log::I(TAG, "inRemovedList not exist, friendid:%s", friendid.c_str());
+        return false;
+    }
     bool DatabaseProxy::removeMember(std::string friendid) {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         for (int i = 0; i < mMemberList->size(); i++) {
@@ -197,6 +269,7 @@ namespace chatrobot {
             }
             member_info->Lock();
             if(member_info->mFriendid->compare(friendid) == 0) {
+                mRemovedMemberList->push_back(member_info);
                 mMemberList->erase(std::begin(*mMemberList.get()) + i);
                 char *errMsg = NULL;
                 std::string t_strSql;
@@ -216,6 +289,48 @@ namespace chatrobot {
         return false;
     }
 
+    void DatabaseProxy::addBlockMember(std::shared_ptr<MemberInfo> memberinfo){
+        MUTEX_LOCKER locker_sync_data(_SyncedBlockMemberList);
+        std::string t_strSql = "";
+        char *errMsg = NULL;
+        mBlockMemberList->push_back(memberinfo);
+        t_strSql = "insert into block_member_table values(NULL,'"+*memberinfo->mFriendid.get()+"');";
+
+        //消息直接入库
+        int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
+        if (rv != SQLITE_OK) {
+            Log::I(DatabaseProxy::TAG, "SQLite update addBlockMember error: %s\n",
+                   errMsg);
+        }
+    }
+
+    bool DatabaseProxy::removeBlockMember(std::string friendid) {
+        MUTEX_LOCKER locker_sync_data(_SyncedBlockMemberList);
+        for (int i = 0; i < mBlockMemberList->size(); i++) {
+            std::shared_ptr<MemberInfo> member_info = mBlockMemberList->at(i);
+            if (member_info.get() == nullptr) {
+                continue;
+            }
+            member_info->Lock();
+            if(member_info->mFriendid->compare(friendid) == 0) {
+                mBlockMemberList->erase(std::begin(*mBlockMemberList.get()) + i);
+                char *errMsg = NULL;
+                std::string t_strSql;
+                t_strSql = "delete from block_member_table where FriendId='" + friendid + "';";
+                //消息直接入库
+                int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
+                if (rv != SQLITE_OK) {
+                    Log::I(DatabaseProxy::TAG, "SQLite removeBlockMember error: %s\n",
+                           errMsg);
+                }
+                member_info->UnLock();
+                return true;
+            }
+            member_info->UnLock();
+        }
+        Log::I(TAG, "removeBlockMember not exist, friendid:%s", friendid.c_str());
+        return false;
+    }
     int DatabaseProxy::callback(void *context, int argc, char **argv, char **azColName) {
         auto database_proxy = reinterpret_cast<DatabaseProxy *>(context);
         int i;
@@ -278,6 +393,50 @@ namespace chatrobot {
         sqlite3_finalize(pStmt);     //销毁一个SQL语句对象
     }
 
+    void DatabaseProxy::syncBlockList() {
+        MUTEX_LOCKER locker_sync_data(_SyncedBlockMemberList);
+        //查询一条记录
+        char **azResult;   //二维数组存放结果
+        char *errMsg = NULL;
+        int nrow;          /* Number of result rows written here */
+        int ncolumn;
+        std::string t_strSql;
+        t_strSql = "select * from block_member_table order by id asc";
+        /*step 2: sql语句对象。*/
+        sqlite3_stmt *pStmt;
+        int rc = sqlite3_prepare_v2(
+                mDb, //数据库连接对象
+                t_strSql.c_str(), //指向原始sql语句字符串
+                strlen(t_strSql.c_str()), //
+                &pStmt,
+                NULL
+        );
+        if (rc != SQLITE_OK) {
+            Log::I(TAG, "sqlite3_prepare_v2 error:%s", sqlite3_errmsg(mDb));
+            return;
+        }
+
+        rc = sqlite3_get_table(mDb, t_strSql.c_str(), &azResult, &nrow, &ncolumn, &errMsg);
+        if (rc == SQLITE_OK) {
+            Log::I(TAG, "syncMemberList, successful sql:%s", t_strSql.c_str());
+        } else {
+            Log::I(TAG, "syncMemberList, Can't get table: %s", sqlite3_errmsg(mDb));
+            return;
+        }
+
+        if (nrow != 0 && ncolumn != 0) {     //有查询结果,不包含表头所占行数
+            for (int i = 1; i <= nrow; i++) {        // 第0行为数据表头
+                mBlockMemberList->push_back(std::make_shared<MemberInfo>(
+                        std::make_shared<std::string>(azResult[2*i + 1]),
+                        std::make_shared<std::string>(""),
+                        1,//初始化时为offline
+                        0));
+            }
+        }
+
+        sqlite3_free_table(azResult);
+        sqlite3_finalize(pStmt);     //销毁一个SQL语句对象
+    }
     void DatabaseProxy::syncMemberList() {
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
         //查询一条记录
@@ -353,7 +512,7 @@ namespace chatrobot {
                    "SQLite create_message_table statement execution error: %s\n", errMsg);
             return 1;
         }
-        char create_blackmember_table[256] = "CREATE TABLE IF NOT EXISTS black_member_table (id INTEGER PRIMARY KEY AUTOINCREMENT,Friendid TEXT NOT NULL)";
+        char create_blackmember_table[256] = "CREATE TABLE IF NOT EXISTS block_member_table (id INTEGER PRIMARY KEY AUTOINCREMENT,Friendid TEXT NOT NULL)";
         rv = sqlite3_exec(mDb, create_blackmember_table, callback, this, &errMsg);
         if (rv != SQLITE_OK) {
             Log::I(DatabaseProxy::TAG,
@@ -370,6 +529,7 @@ namespace chatrobot {
         //同步Member信息
         syncMemberList();
         syncGroupInfo();
+        syncBlockList();
         return 0;
     }
 }

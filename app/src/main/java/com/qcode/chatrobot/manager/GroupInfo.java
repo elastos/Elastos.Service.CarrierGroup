@@ -50,8 +50,10 @@ public class GroupInfo implements Comparable<GroupInfo>{
                     if (data != null) {
                         final String address = data.getString("address");
                         synchronized (GroupInfo.this) {
-                            mAddress = address;
-                            mGroupManager.onGroupInfoUpdate();
+                            if (mAddress == null || !mAddress.equals(address)) {
+                                mAddress = address;
+                                mGroupManager.onGroupInfoUpdate();
+                            }
                         }
                     }
                     break;
@@ -60,8 +62,12 @@ public class GroupInfo implements Comparable<GroupInfo>{
                     Bundle data = msg.getData();
                     if (data != null) {
                         synchronized (GroupInfo.this) {
-                            mMemberCount = data.getInt("memberCount");
-                            mGroupManager.onGroupInfoUpdate();
+                            int member_count = data.getInt("memberCount");
+                            if (member_count != mMemberCount) {
+                                mMemberCount = member_count;
+                                mGroupManager.onGroupInfoUpdate();
+                            }
+                           
                         }
                     }
                     break;
@@ -71,8 +77,10 @@ public class GroupInfo implements Comparable<GroupInfo>{
                     if (data != null) {
                         final String nickname = data.getString("nickName");
                         synchronized (GroupInfo.this) {
-                            mNickName = nickname;
-                            mGroupManager.onGroupInfoUpdate();
+                            if (mNickName == null || !mNickName.equals(nickname)) {
+                                mNickName = nickname;
+                                mGroupManager.onGroupInfoUpdate();
+                            }
                         }
                     }
                     break;
