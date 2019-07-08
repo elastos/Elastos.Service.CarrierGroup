@@ -22,10 +22,13 @@ namespace chatrobot {
         mRemovedMemberList.reset();
     }
 
-    void DatabaseProxy::updateMemberInfo(std::shared_ptr<MemberInfo> target_memberinfo) {
-        std::shared_ptr<MemberInfo> member_info = this->getMemberInfo(target_memberinfo->mFriendid);
+    void DatabaseProxy::updateMemberInfo(std::shared_ptr<std::string> friendid,
+                                         std::shared_ptr<std::string> nickname,
+                                         int status,
+                                         std::time_t time_stamp) {
+        std::shared_ptr<MemberInfo> member_info = this->getMemberInfo(friendid);
         MUTEX_LOCKER locker_sync_data(_SyncedMemberList);
-        std::shared_ptr<std::string> tmp_nickname = target_memberinfo->mNickName;
+        std::shared_ptr<std::string> tmp_nickname = nickname;
         std::string t_strSql = "";
         char *errMsg = NULL;
         if (member_info.get() != nullptr) {
@@ -35,11 +38,10 @@ namespace chatrobot {
             } else {
                 tmp_nickname = member_info->mNickName;
             }
-            member_info->mStatus = target_memberinfo->mStatus;
-            if(target_memberinfo->mMsgTimeStamp > member_info->mMsgTimeStamp) {
-                member_info->mMsgTimeStamp = target_memberinfo->mMsgTimeStamp;
+            if (time_stamp > member_info->mMsgTimeStamp) {
+                member_info->mMsgTimeStamp = time_stamp;
             }
-
+            member_info->mStatus = status;
             t_strSql = "update member_table set NickName='"+*tmp_nickname.get()+"'";
             t_strSql += ",Status="+std::to_string(member_info->mStatus);
             t_strSql += ",MsgTimeStamp="+std::to_string(member_info->mMsgTimeStamp);
@@ -47,7 +49,8 @@ namespace chatrobot {
             member_info->UnLock();
 
         } else {
-            member_info = target_memberinfo;
+            member_info = std::make_shared<chatrobot::MemberInfo>(
+                    friendid, nickname, status, time_stamp);
             mMemberList->push_back(member_info);
             t_strSql = "insert into member_table values(NULL,'"+*member_info->mFriendid.get()+"'";
             t_strSql += ",'"+*member_info->mNickName.get()+"'";

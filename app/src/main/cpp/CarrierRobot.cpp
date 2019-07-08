@@ -156,9 +156,7 @@ namespace chatrobot {
 
         std::shared_ptr<MemberInfo> block_member_info = mDatabaseProxy->getBlockMemberInfo(friendid);
         if (block_member_info.get() == nullptr) {
-            std::shared_ptr<chatrobot::MemberInfo> memberinfo = std::make_shared<chatrobot::MemberInfo>(
-                    friendid, nickname, status == ElaConnectionStatus_Connected ? 0 : 1, 0);
-            mDatabaseProxy->updateMemberInfo(memberinfo);
+            mDatabaseProxy->updateMemberInfo(friendid, nickname, status == ElaConnectionStatus_Connected ? 0 : 1, 0);
             //当前状态为上线时，获取该成员offline以后的所以消息，并发送给该人,
             if (status == ElaConnectionStatus_Connected) {
                 relayMessages();
@@ -211,7 +209,7 @@ namespace chatrobot {
             }
             memberInfo->UnLock();
             if (info_changed) {
-                mDatabaseProxy->updateMemberInfo(memberInfo);
+                mDatabaseProxy->updateMemberInfo(memberInfo->mFriendid, memberInfo->mNickName, memberInfo->mStatus, memberInfo->mMsgTimeStamp);
             }
 
         }
@@ -479,9 +477,6 @@ namespace chatrobot {
                     }
                     memberInfo->UnLock();
                 }
-                //删除文件
-                Log::I(TAG, "deleteGroupCmd, local path:%s", mLocalPath->c_str());
-                std::remove(mLocalPath->c_str());
             }
         }
     }

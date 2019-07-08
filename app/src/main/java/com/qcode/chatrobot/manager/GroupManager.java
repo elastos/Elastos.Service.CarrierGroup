@@ -15,6 +15,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.qcode.chatrobot.common.CommonVar;
+import com.qcode.chatrobot.common.FileUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -75,7 +76,7 @@ public class GroupManager {
                     e.printStackTrace();
                 }
             }
-            if (mGroupList.size() > 1) {
+            if (mGroupList.size() > 0) {
                 //排序
                 Collections.sort(mGroupList);
                 mCurrentId = mGroupList.get(0).mId;
@@ -184,7 +185,12 @@ public class GroupManager {
                         mContext.stopService(group_info.mServiceIntent);
                         group_info.mServiceIntent = null;
                     }
-                    
+                    //删除指定目录
+                    if (group_info.mDataDir != null) {
+                        FileUtils.rm(group_info.mDataDir);
+                        group_info.mDataDir = null;
+                    }
+                   
                     mGroupList.remove(i);
                     if (mCurrentId == id && mGroupList.size() > 0) {
                         mCurrentId = mGroupList.get(0).mId;
@@ -313,11 +319,7 @@ public class GroupManager {
                 Log.v(TAG, "CarrierService onServiceDisconnected");
                 String class_name = name.getClassName();
                 final int index = Integer.parseInt(class_name.substring(CommonVar.CONST_CARRIER_SERVICE_BASENAME.length()));
-            /*synchronized (mGroupList) {
-                if (mGroupList.size() > index) {
-                    mGroupList.remove(index);
-                }
-            }*/
+                
             }
         };
         
@@ -336,6 +338,6 @@ public class GroupManager {
     }
     
     public String getLocalCacheDir(String class_name) {
-        return mContext.getCacheDir() + "/" + class_name + "/"+getRandomString(5)+"/";
+        return mContext.getCacheDir() + "/" + class_name + "/";
     }
 }

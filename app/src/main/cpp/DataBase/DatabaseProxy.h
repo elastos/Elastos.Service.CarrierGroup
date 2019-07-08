@@ -27,7 +27,10 @@ namespace chatrobot {
 
         static constexpr const char *TAG = "DatabaseProxy";
 
-        void updateMemberInfo(std::shared_ptr<MemberInfo> memberinfo);
+        void updateMemberInfo(std::shared_ptr<std::string> friendid,
+                              std::shared_ptr<std::string> nickname,
+                              int status,
+                              std::time_t time_stamp);
 
         std::shared_ptr<MemberInfo> getMemberInfo(std::shared_ptr<std::string> friendid);
         std::shared_ptr<MemberInfo> getMemberInfo(int index);
