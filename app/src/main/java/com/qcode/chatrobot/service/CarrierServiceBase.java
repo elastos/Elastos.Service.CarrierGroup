@@ -15,6 +15,7 @@ import android.util.Log;
 
 import com.qcode.chatrobot.common.CarrierProxy;
 import com.qcode.chatrobot.common.CommonVar;
+import com.qcode.chatrobot.common.FileUtils;
 import com.qcode.chatrobot.manager.MemberInfo;
 
 import java.util.Timer;
@@ -103,6 +104,7 @@ public class CarrierServiceBase extends Service {
             switch (msg.what) {
                 case CommonVar.Connected: {
                     String data_path = bundle.getString("data_path");
+                    FileUtils.mkdir(data_path, 777);
                     clientMessenger = msg.replyTo;
                     Log.d(TAG, "IncomingHandler msg:" + msg);
                     //启动service
