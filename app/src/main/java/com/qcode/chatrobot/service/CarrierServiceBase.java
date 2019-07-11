@@ -29,9 +29,9 @@ public class CarrierServiceBase extends Service {
     private Timer mTimer = null;
     private TimerTask mTimerTask = null;
     private CarrierProxy mCarrierProxy;
-    private int mMemberNum = 0;
-    private String mGroupNickName = "";
-    private int mGroupStatus = 0;
+    private int mMemberNum = -1;
+    private String mGroupNickName = null;
+    private int mGroupStatus = -1;
     
     private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     
@@ -178,17 +178,20 @@ public class CarrierServiceBase extends Service {
         Log.d(TAG, "sendCarrierMemberCount");
         if (clientMessenger != null) {
             synchronized (mCarrierProxy) {
-                try {
-                    Message reply_msg = new Message();
-                    Bundle reply_bundle = new Bundle();
-                    reply_msg.what = CommonVar.Command_UpdateMemberCount;
-                    reply_bundle.putInt("memberCount", mMemberNum);
-                    reply_msg.setData(reply_bundle);
-                    clientMessenger.send(reply_msg);
-                    Log.d(TAG, "sendCarrierMemberCount memberCount:" + mMemberNum);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
+                if (mMemberNum != -1) {
+                    try {
+                        Message reply_msg = new Message();
+                        Bundle reply_bundle = new Bundle();
+                        reply_msg.what = CommonVar.Command_UpdateMemberCount;
+                        reply_bundle.putInt("memberCount", mMemberNum);
+                        reply_msg.setData(reply_bundle);
+                        clientMessenger.send(reply_msg);
+                        Log.d(TAG, "sendCarrierMemberCount memberCount:" + mMemberNum);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
+                
             }
         }
     }
@@ -197,16 +200,19 @@ public class CarrierServiceBase extends Service {
         Log.d(TAG, "sendCarrierNickName");
         if (clientMessenger != null) {
             synchronized (mCarrierProxy) {
-                try {
-                    Message reply_msg = new Message();
-                    Bundle reply_bundle = new Bundle();
-                    reply_msg.what = CommonVar.Command_UpdateNickName;
-                    reply_bundle.putString("nickName", mGroupNickName);
-                    reply_msg.setData(reply_bundle);
-                    clientMessenger.send(reply_msg);
-                    Log.d(TAG, "sendCarrierNickName nickName:" + mGroupNickName);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
+                if (mGroupNickName != null) {
+                    try {
+                        
+                        Message reply_msg = new Message();
+                        Bundle reply_bundle = new Bundle();
+                        reply_msg.what = CommonVar.Command_UpdateNickName;
+                        reply_bundle.putString("nickName", mGroupNickName);
+                        reply_msg.setData(reply_bundle);
+                        clientMessenger.send(reply_msg);
+                        Log.i(TAG, "sendCarrierNickName nickName:" + mGroupNickName);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -215,18 +221,21 @@ public class CarrierServiceBase extends Service {
         Log.d(TAG, "sendCarrierGroupStatus");
         if (clientMessenger != null) {
             synchronized (mCarrierProxy) {
-                try {
-                    Message reply_msg = new Message();
-                    Bundle reply_bundle = new Bundle();
-                    reply_msg.what = CommonVar.Command_UpdateStatus;
-                    reply_bundle.putInt("status", mGroupStatus);
-                    reply_msg.setData(reply_bundle);
-                    clientMessenger.send(reply_msg);
-                    Log.d(TAG, "sendCarrierGroupStatus mGroupStatus:" + mGroupStatus);
-                    
-                } catch (RemoteException e) {
-                    e.printStackTrace();
+                if (mGroupStatus != -1) {
+                    try {
+                        Message reply_msg = new Message();
+                        Bundle reply_bundle = new Bundle();
+                        reply_msg.what = CommonVar.Command_UpdateStatus;
+                        reply_bundle.putInt("status", mGroupStatus);
+                        reply_msg.setData(reply_bundle);
+                        clientMessenger.send(reply_msg);
+                        Log.d(TAG, "sendCarrierGroupStatus mGroupStatus:" + mGroupStatus);
+                        
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
+                
             }
         }
     }
@@ -235,7 +244,6 @@ public class CarrierServiceBase extends Service {
             sendCarrierMemberCount();
             sendCarrierNickName();
             sendCarrierGroupStatus();
-            
             mMainThreadHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -244,7 +252,7 @@ public class CarrierServiceBase extends Service {
                     mGroupStatus = mCarrierProxy.getGroupStatus();
                     updateGroupInfo();
                 }
-            }, 10000);
+            }, 3000);
         }
     }
     
