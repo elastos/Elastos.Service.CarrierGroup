@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <Tools/Log.hpp>
+#include <../../common/Log.hpp>
 #include "MemberInfo.h"
 
 namespace chatrobot {

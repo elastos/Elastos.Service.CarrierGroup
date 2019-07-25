@@ -9,6 +9,7 @@
 #include <string>
 #include <ctime>
 #include <ela_carrier.h>
+#include <memory> // std::unique_ptr
 
 class MessageInfo {
 

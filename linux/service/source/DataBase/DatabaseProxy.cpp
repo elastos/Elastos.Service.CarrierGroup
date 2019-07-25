@@ -5,7 +5,7 @@
 #include "DatabaseProxy.h"
 #include <map>
 #include <iostream>
-#include <Tools/Log.hpp>
+#include <../../common/Log.hpp>
 
 namespace chatrobot {
     DatabaseProxy::DatabaseProxy() {

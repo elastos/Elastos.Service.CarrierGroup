@@ -7,19 +7,22 @@
 
 #include <stdlib.h>
 #include <functional>
+#include <string>
+#include <iostream>
+#include <thread>
+#include <future>
+#include <queue>
 #include <memory> // std::unique_ptr
 #include <ctime>
 #include <thread>
 #include <regex>
-#include <ela_carrier.h>
 #include <ela_session.h>
-
+#include <ela_carrier.h>
 #include "DataBase/DatabaseProxy.h"
 #include <CarrierConfig.h>
 
 namespace chatrobot {
     static const char *TAG = "CarrierRobot";
-
     class CarrierRobot:std::enable_shared_from_this<CarrierRobot> {
     public:
         class Factory {
@@ -32,7 +35,7 @@ namespace chatrobot {
             friend class CarrierRobot;
         };
         ~CarrierRobot();
-        int start(const char* data_dir);
+        int start(const char* data_dir, int service_id);
         void stop();
         int getAddress(std::string& address);
         int acceptFriend(std::shared_ptr<std::string>friendid);
@@ -66,6 +69,7 @@ namespace chatrobot {
         void deleteGroupCmd(const std::vector<std::string> &args);
         std::shared_ptr<std::string> getGroupNickName();
         int getGroupStatus();
+        void registerCarrierCallBack(const std::function<void(const std::string)> &carrierCallBack);
     private:
         static CarrierRobot* instance;
 
@@ -82,6 +86,9 @@ namespace chatrobot {
         std::shared_ptr<CarrierConfig> mCarrierConfig;
         std::shared_ptr<DatabaseProxy> mDatabaseProxy;
         int mStatus;
+        std::function <void(const std::string)> mCarrierCallBack;
+        std::string mAddress;
+        void sendMsgForManager(std::string msg);
     };
 }
 

@@ -13,15 +13,16 @@ using namespace std;
 #include <ela_session.h>
 #include <thread>
 #include <chrono>
-#include <Tools/Log.hpp>
-#include "ThirdParty/json.hpp"
+#include <Log.hpp>
+#include <json.hpp>
+#include <CommonVar.h>
 #include <ThirdParty/CompatibleFileSystem.hpp>
 #include <Command/ChatRobotCmd.hpp>
 #include "CarrierRobot.h"
 #include "ErrCode.h"
 
 namespace chatrobot {
-    using Json = nlohmann::json;
+    using json = nlohmann::json;
     std::string CarrierRobot::Factory::sLocalDataDir;
 
     /***********************************************/
@@ -140,6 +141,7 @@ namespace chatrobot {
                 nickanme = std::make_shared<std::string>("");
             }
             carrier_robot->updateMemberInfo(std::make_shared<std::string>(friendid), nickanme, status);
+
         }
     }
 
@@ -162,6 +164,11 @@ namespace chatrobot {
                 relayMessages();
             }
         }
+        json msg;
+        msg["cmd"] = Command_UpdateMemberCount;
+        msg["friendid"] = mAddress.c_str();
+        msg["membercount"] = getFriendList()->size();
+        sendMsgForManager(msg.dump());
     }
 
     bool CarrierRobot::relayMessages() {
@@ -252,7 +259,7 @@ namespace chatrobot {
         mDatabaseProxy->closeDb();
     }
 
-    int CarrierRobot::start(const char *data_dir) {
+    int CarrierRobot::start(const char *data_dir, int service_id) {
         ElaOptions carrierOpts;
         ElaCallbacks carrierCallbacks;
         mLocalPath = std::make_shared<std::string>(data_dir);
@@ -284,6 +291,7 @@ namespace chatrobot {
         ela_log_init(static_cast<ElaLogLevel>(mCarrierConfig->mLogLevel), nullptr, nullptr);
 
         auto creater = [&]() -> ElaCarrier * {
+            ela_log_init(ElaLogLevel::ElaLogLevel_Warning, data_dir, nullptr);
             auto ptr = ela_new(&carrierOpts, &carrierCallbacks, this);
             return ptr;
         };
@@ -309,7 +317,12 @@ namespace chatrobot {
         if (member_info.get() != nullptr) {
             mCreaterFriendId = member_info->mFriendid;
         }
-
+        getAddress(mAddress);
+        json msg;
+        msg["cmd"] = Command_UpdateAddress;
+        msg["serviceid"] = service_id;
+        msg["friendid"] = mAddress.c_str();
+        sendMsgForManager(msg.dump());
         return 0;
     }
 
@@ -450,6 +463,11 @@ namespace chatrobot {
             if ((*mCreaterFriendId.get()).compare((friend_id)) == 0) {
                 const std::string nick_name = args[1];
                 mDatabaseProxy->updateGroupNickName(std::make_shared<std::string>(nick_name));
+                json msg;
+                msg["cmd"] =Command_UpdateNickName;
+                msg["friendid"] = mAddress.c_str();
+                msg["nickname"] = nick_name.c_str();
+                sendMsgForManager(msg.dump());
             }
         }
     }
@@ -460,6 +478,11 @@ namespace chatrobot {
             const std::string friend_id = args[1];
             if ((*mCreaterFriendId.get()).compare((friend_id)) == 0) {
                 mStatus = -1;
+                json msg;
+                msg["cmd"] = Command_UpdateStatus;
+                msg["friendid"] = mAddress.c_str();
+                msg["status"] = mStatus;
+                sendMsgForManager(msg.dump());
                 //好友解除关系
                 std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>> memberlist = mDatabaseProxy->getFriendList();
                 for (int i = 0; i < memberlist->size(); i++) {
@@ -510,6 +533,11 @@ namespace chatrobot {
                 }
                 ela_send_friend_message(mCarrier.get(), friend_id.c_str(),
                                         msg_str, strlen(msg_str));
+                json msg;
+                msg["cmd"] = Command_UpdateMemberCount;
+                msg["friendid"] = mAddress.c_str();
+                msg["membercount"] = getFriendList()->size();
+                sendMsgForManager(msg.dump());
             }
         }
     }
@@ -542,7 +570,23 @@ namespace chatrobot {
 
                 ela_send_friend_message(mCarrier.get(), friend_id.c_str(),
                                         msg_str, strlen(msg_str));
+
+                json msg;
+                msg["cmd"] = Command_UpdateMemberCount;
+                msg["friendid"] = mAddress.c_str();
+                msg["membercount"] = getFriendList()->size();
+                sendMsgForManager(msg.dump());
             }
+        }
+    }
+
+    void CarrierRobot::registerCarrierCallBack(const std::function<void (const std::string)> &carrierCallBack) {
+        mCarrierCallBack = carrierCallBack;
+    }
+
+    void  CarrierRobot::sendMsgForManager(std::string msg) {
+        if (mCarrierCallBack != nullptr) {
+            mCarrierCallBack(msg);
         }
     }
 }

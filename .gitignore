@@ -1,7 +1,25 @@
 # OSX
 #
 .DS_Store
-
+linux/manager/CMakeCache.txt
+linux/manager/CMakeFiles/
+linux/manager/Makefile
+linux/manager/carrierManager
+linux/manager/carrierManager.cbp
+linux/manager/carrierService
+linux/manager/cmake-build-debug/
+linux/manager/cmake_install.cmake
+linux/manager/libcarrierManager.so
+linux/service/CMakeCache.txt
+linux/service/CMakeFiles/
+linux/service/Makefile
+linux/service/carrierService
+linux/service/carrierService.cbp
+linux/service/cmake-build-debug/
+linux/service/cmake_install.cmake
+linux/ui/carrierManager
+linux/ui/carrierService
+linux/ui/libcarrierManager.so
 # Windows
 #
 Thumbs.db

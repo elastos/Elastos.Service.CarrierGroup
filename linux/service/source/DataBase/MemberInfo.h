@@ -10,6 +10,8 @@
 #include <mutex>
 #include <ela_carrier.h>
 #include <ctime>
+#include <memory> // std::unique_ptr
+
 
 namespace chatrobot {
 

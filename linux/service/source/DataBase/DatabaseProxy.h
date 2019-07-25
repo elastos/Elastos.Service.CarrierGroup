@@ -10,6 +10,11 @@
 #include <vector>
 #include <mutex>
 #include <sqlite3.h>
+#include <stdlib.h>
+#include <iostream>
+#include <memory> // std::unique_ptr
+#include <ctime>
+#include <regex>
 #include "MessageInfo.h"
 #include "MemberInfo.h"
 

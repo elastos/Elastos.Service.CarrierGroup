@@ -9,6 +9,8 @@
 #include <vector>
 #include <ela_carrier.h>
 #include "Node.h"
+#include <memory> // std::unique_ptr
+
 namespace chatrobot {
     class CarrierConfig {
     public:
