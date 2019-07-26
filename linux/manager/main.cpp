@@ -45,7 +45,6 @@ int main(int argc, char** argv) {
                 groupinfo->UnLock();
             }
             printf("group list:\n%s\n",result.c_str());
-
         } else if (strcmp((char*)cmd, "create") == 0) {
             m->createGroup();
 

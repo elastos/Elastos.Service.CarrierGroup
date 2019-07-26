@@ -31,10 +31,11 @@ void manager::start(std::string ip, int port, std::string data_root_dir) {
     mServiceId = 0;
     mIsReady = false;
     mDataBaseProxy->startDb(mRootDir.c_str());
-
+    printf("manager::start in\n");
     //启动线程接收消息
     mCommunicationThread = std::thread(&manager::runCommunicationThread, this); //引用
     mWorkThread = std::thread(&manager::runWorkThread, this); //引用
+    printf("manager::start out\n");
 }
 std::shared_ptr<std::vector<std::shared_ptr<GroupInfo>>> manager::getGroupList() {
     return mDataBaseProxy->getGroupList();
@@ -103,6 +104,7 @@ int manager::_createGroup() {
 }
 
 void manager::runWorkThread() {
+    printf("manager::runWorkThread in\n");
     while (true) {
         std::unique_lock<std::mutex> lk(mQueue_lock);
         mQueue_cond.wait(lk, [this] { return !mQueue.empty(); });
@@ -197,6 +199,7 @@ void manager::recvServiceMsgThread(int client_fd) {
     }
 }
 void manager::runCommunicationThread() {
+    printf("manager::runCommunicationThread in\n");
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         perror("socket");
@@ -212,11 +215,12 @@ void manager::runCommunicationThread() {
     //端口复用
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
                &reuseaddr, sizeof(reuseaddr));
-
+    printf("manager::runCommunicationThread ip:%s, port:%d\n", mIp.c_str(), mPort);
     int res = bind(sockfd, (struct sockaddr *) &addr,
                    sizeof(addr));
     if (res == -1) {
         perror("bind");
+        printf("manager::runCommunicationThread error ip:%s, port:%d\n", mIp.c_str(), mPort);
         exit(-1);
     }
     sendMsgToWorkThread("{\"cmd\":0}");

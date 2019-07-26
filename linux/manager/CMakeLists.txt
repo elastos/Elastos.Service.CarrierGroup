@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(carrierManager)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -lpthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fpic -lpthread")
 
 set(SOURCE_FILES main.cpp
         ../common/Log.hpp
@@ -15,11 +15,12 @@ set(SOURCE_FILES main.cpp
         src/DatabaseProxy.h
         src/DatabaseProxy.cpp
         src/manager.cpp
-        src/manager.h)
+        src/manager.h
+        managerApi.cpp)
 INCLUDE_DIRECTORIES(../common/)
-
-add_executable(carrierManager ${SOURCE_FILES})
-#add_library(carrierManager SHARED ${SOURCE_FILES})
+INCLUDE_DIRECTORIES(/usr/include/python3.6/)
+#add_executable(carrierManager ${SOURCE_FILES})
+add_library(carrierManager SHARED ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(carrierManager
         pthread
         sqlite3
