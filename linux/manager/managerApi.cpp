@@ -4,7 +4,6 @@
 
 #include "src/manager.h"
 #include "../common/json.hpp"
-#include <Python.h>
 extern "C" {
 manager mManager;
 using json = nlohmann::json;
@@ -17,12 +16,10 @@ void createGroup() {
     mManager.createGroup();
 }
 
-PyObject* list() {
+void list(char* outdata) {
     printf("list in\n");
     std::shared_ptr<std::vector<std::shared_ptr<GroupInfo>>> group_list = mManager.getGroupList();
     json result_json;
-    result_json["code"] = 0;
-    result_json["data"] = json::parse("[]");
     for(int i=0; i<group_list->size(); i++) {
         std::shared_ptr<GroupInfo> groupinfo = group_list->at(i);
         groupinfo->Lock();
@@ -36,9 +33,9 @@ PyObject* list() {
         item_json["address"] = address;
         item_json["members"] = std::to_string(member_count);
         item_json["nickname"] = nickname;
-        result_json["data"].push_back(item_json);
+        result_json.push_back(item_json);
         groupinfo->UnLock();
     }
-    return  (PyObject*)Py_BuildValue("s","helloworld");
+    sprintf(outdata, "%s", result_json.dump().c_str());
 }
 }

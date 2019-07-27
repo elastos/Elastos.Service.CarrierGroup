@@ -18,7 +18,6 @@ set(SOURCE_FILES main.cpp
         src/manager.h
         managerApi.cpp)
 INCLUDE_DIRECTORIES(../common/)
-INCLUDE_DIRECTORIES(/usr/include/python3.6/)
 #add_executable(carrierManager ${SOURCE_FILES})
 add_library(carrierManager SHARED ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(carrierManager

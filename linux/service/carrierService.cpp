@@ -39,7 +39,10 @@ void carrierService::runCommunicationThread() {
     addr.sin_family = AF_INET;
     addr.sin_port = htons(mPort);//连接端口
     addr.sin_addr.s_addr = inet_addr(mIp.c_str());//都是服务器的，改成连接IP
+    printf("ip:%s, port:%d, sockfd:%d\n", mIp.c_str(), mPort, sockfd);
+
     int res = connect(sockfd, (struct sockaddr *) &addr, sizeof(addr));
+
     if (res == -1) {
         perror("connect"), exit(-1);
     }
@@ -52,7 +55,6 @@ void carrierService::runCommunicationThread() {
         perror("read"), exit(-1);
     }
     //收到manager消息即可，不用分析是否是Ready的消息。
-
     printf("连接成功\n");
     mCarrierRobot->registerCarrierCallBack(std::bind(&carrierService::sendMsgToWorkThread, this, std::placeholders::_1));
     mCarrierRobot->start(mRootDir.c_str(), mServiceId);
@@ -60,22 +62,15 @@ void carrierService::runCommunicationThread() {
 
     while (true) {
         std::unique_lock <std::mutex> lk(mQueue_lock);
-        printf("service s mQueue_cond.wait\n");
         mQueue_cond.wait(lk, [this] { return !mQueue.empty(); });
         if (mQueue.empty()) {
             break;
         }
         std::shared_ptr <std::string> result = mQueue.front();
-        printf("service runCommunicationThread msg:%s\n", result->c_str());
-        printf("service runCommunicationThread write to sockfd:%d\n", sockfd);
         write(sockfd, result->c_str(), strlen(result->c_str()));
-
-        printf("service runCommunicationThread mQueue.pop\n");
         mQueue.pop();
         lk.unlock();
-        printf("service runCommunicationThread lk.unlock\n");
         mWrite_cond.notify_one();
-        printf("service runWorkThread mWrite_cond.notify_one\n");
     }
     close(sockfd);
 }

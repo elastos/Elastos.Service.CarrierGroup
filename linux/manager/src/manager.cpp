@@ -223,18 +223,23 @@ void manager::runCommunicationThread() {
         printf("manager::runCommunicationThread error ip:%s, port:%d\n", mIp.c_str(), mPort);
         exit(-1);
     }
-    sendMsgToWorkThread("{\"cmd\":0}");
+    printf("manager::bind ok\n");
+    bool  ready = false;
     pthread_t th =-1 ;
     while (1) {
         listen(sockfd, 100);//监听
+        printf("manager::listen ok\n");
         struct sockaddr_in client;
         socklen_t len = sizeof(client);
-
+        if (!ready) {
+            sendMsgToWorkThread("{\"cmd\":0}");
+            ready = true;
+        }
         int client_fd = accept(sockfd, (struct sockaddr *) &client,
                         &len);//阻塞函数
         if(-1 == client_fd)
         {
-            perror("listen");
+            perror("accept");
             continue;
         }
         //save client fd, close client when client shut down

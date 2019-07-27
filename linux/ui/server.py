@@ -2,14 +2,13 @@
 # -*- coding: utf-8 -*-
 # by vellhe 2017/7/9
 from flask import Flask, abort, request, jsonify
+import argparse
 import chatrobot_restful_api as chatrobot
 app = Flask(__name__)
 
-@app.route('/start/', methods=['GET'])
-def start():
-    chatrobot.start("127,0,0,1", 2222, "/home/lcf/workspace/ChatRobot/linux/ui")
-    return jsonify({'result':"success"});
-
+def start(data_dir):
+    print(data_dir)
+    chatrobot.start("127.0.0.1", 2222, data_dir)
 @app.route('/create/', methods=['GET'])
 def create():
     chatrobot.createGroup();
@@ -17,9 +16,20 @@ def create():
 
 @app.route('/list/', methods=['GET'])
 def list():
-    return chatrobot.list();
+    data = chatrobot.list();
+    return jsonify({'code':0, 'data':data});
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--ip', type=str, default="0.0.0.0")
+parser.add_argument('--port', type=int, default=8384)
+parser.add_argument('--data_path', type=str, default="/data/chatrobot/")
+args = parser.parse_args();
+
 if __name__ == "__main__":
     # 将host设置为0.0.0.0，则外网用户也可以访问到这个服务
-    app.run(host="127.0.0.1", port=8384, debug=True)
-    
+    start(args.data_path)
+    print("start in************************************8")
+    app.run(host=args.ip, port=args.port)
+
 
