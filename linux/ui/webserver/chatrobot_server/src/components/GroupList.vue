@@ -8,13 +8,20 @@
   <a-list
     :dataSource="data"
   >
-    <a-list-item slot="renderItem" slot-scope="item">
-      <a-list-item-meta :description="item.address">
-        <a slot="title" >{{item.id }}:{{item.nickname?item.nickname:"未命名"}}</a>
-        <a-avatar slot="avatar" src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png" />
-      </a-list-item-meta>
-      <div>{{item.members}}</div>
-    </a-list-item>
+      <a-list-item slot="renderItem" slot-scope="item" key="item.id">
+          <a-list-item-meta
+                  :description="item.address"
+          >
+              <a slot="title" >{{item.id }}:{{item.nickname?item.nickname:"未命名"}}</a>
+              <a-avatar slot="avatar" src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png" />
+
+          </a-list-item-meta>
+          <a-card>成员数：{{item.members}}
+              <qrcode :value="item.address" :options="{ width: 200 }"></qrcode>
+          </a-card>
+
+
+      </a-list-item>
     <div v-if="loading && !busy" class="demo-loading-container">
       <a-spin />
     </div>
@@ -31,23 +38,31 @@ export default {
     return {
       data:[],
       loading: false,
-      curAddressIdx:0,
+      curId:0,
       busy: false,
     }
   },
   beforeMount () {
     this.fetchData((res) => {
        this.data = JSON.parse(res.data)
-       let cur_info = null
-       if (this.curAddressIdx >= this.data.length){
-         this.curAddressIdx = this.data.length - 1;
-         cur_info = this.data[this.curAddressIdx];
-       }
-       this.$store.commit('setFocusInfo', cur_info)
+       this.updateCurInfo();
        this.loading = false
     })
   },
   methods: {
+    updateCurInfo() {
+     let cur_info = null;
+        for(let i=0; i<this.data.length;i++) {
+            let item = this.data[i];
+            if (item.id == this.curId) {
+                cur_info = item;
+                break;
+            }
+       }
+       if (cur_info != null) {
+        this.$store.commit('focusinfo', cur_info)
+       }
+    },
     fetchData (callback) {
       reqwest({
         url: fakeDataUrl,
@@ -59,6 +74,11 @@ export default {
         },
       })
     },
+    updateQrcode(id){
+
+     this.curId = id;
+     this.updateCurInfo();
+    },
     handleInfiniteOnLoad  () {
       const data = this.data
       this.loading = true
@@ -68,16 +88,11 @@ export default {
         this.loading = false
         return
       }
-      this.fetchData((res) => {
-         this.data = JSON.parse(res.data)
-        let cur_info = null
-        if (this.curAddressIdx >= this.data.length){
-         this.curAddressIdx = this.data.length - 1;
-         cur_info = this.data[this.curAddressIdx];
-        }
-        this.$store.commit('setFocusInfo', cur_info)
-        this.loading = false
-      })
+        this.fetchData((res) => {
+           this.data = JSON.parse(res.data)
+           this.updateCurInfo();
+          this.loading = false
+        })
     },
   },
 }
@@ -88,7 +103,6 @@ export default {
   border-radius: 4px;
   overflow: auto;
   padding: 8px 24px;
-  width:800px;
   height: 600px;
 }
 .demo-loading-container {
@@ -97,3 +111,5 @@ export default {
   width: 100%;
 }
 </style>
+
+

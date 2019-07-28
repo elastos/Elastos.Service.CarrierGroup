@@ -4,10 +4,11 @@ Vue.use(Vuex)
 
 /*1.state在vuex中用于存储数据*/
 var state={
-    focusInfo:""
+    focusInfo:"",
 }
 var mutations={
-    setFocusInfo(info){
+    setfocusinfo(state, info){
+        window.console.log("setfocusinfo info:", JSON.stringify(info));
         state.focusInfo = info;
     },
 }

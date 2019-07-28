@@ -12,7 +12,7 @@ def start(data_dir):
 app = Flask(__name__)
 CORS(app, resource={r"/*":{"orgins":"*"}}, supports_credentials=True)
 
-@app.route('/create/', methods=['GET'])
+@app.route('/create', methods=['GET'])
 def create():
     chatrobot.createGroup();
     return jsonify({'result':"success"});
