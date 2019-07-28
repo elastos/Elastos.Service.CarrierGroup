@@ -95,6 +95,5 @@ export default {
   position: absolute;
   bottom: 40px;
   width: 100%;
-  text-align: center;
 }
 </style>
