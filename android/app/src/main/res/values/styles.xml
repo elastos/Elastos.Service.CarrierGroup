@@ -7,5 +7,23 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
+    <style name="group_item_info">
+        <item name="android:textSize">
+            17sp
+        </item>
+        <item name="android:textColor">
+            #CCFFFFFF
+        </item>
+    </style>
+    <style name="list_item_title">
 
+        <item name="android:textSize">
+            20sp
+        </item>
+
+        <item name="android:textColor">
+            #FFFFFF
+        </item>
+
+    </style>
 </resources>

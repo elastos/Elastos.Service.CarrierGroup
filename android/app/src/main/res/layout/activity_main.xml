@@ -1,48 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent"
-             android:background="@android:color/holo_blue_bright">
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="30dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="50px"
-        android:textColor="#0917df"
-        android:text="@string/robot_title"/>
-
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="1280dp"
+    android:layout_height="720dp"
+    android:background="#00000000">
+    <!--background-->
+    <ImageView
+        android:layout_width="1280dp"
+        android:layout_height="720dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="-24dp"
+        android:background="@drawable/background_drawable"
+        />
+    <!--title-->
+    <ImageView
+        android:layout_width="1280dp"
+        android:layout_height="100dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="-24dp"
+        android:background="@drawable/title_drawable"
+        />
+    <!--list-->
     <ListView
         android:id="@+id/groupList"
-        android:layout_width="900px"
-        android:layout_height="280dp"
-        android:layout_marginTop="180px"
-        android:layout_marginLeft="350px"
+        android:layout_width="750dp"
+        android:layout_height="450dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="155dp"
+        android:layout_marginLeft="70dp"
+        android:cacheColorHint="#00000000"
+        android:divider = "#00000000"
+        android:listSelector="@drawable/listview_item_bg_selector"
+        android:dividerHeight="20dp"
         />
-
+    <!--create group button-->
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_marginLeft="50px"
-        android:text="@string/create_btn"
         android:id="@+id/createBtn"
+        android:layout_width="320dp"
+        android:layout_height="76dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="890dp"
+        android:layout_marginTop="548dp"
+        android:background="@drawable/create_btn_selector"
+        />
+    <!--qrcode bg-->
+    <ImageView
+        android:layout_width="320dp"
+        android:layout_height="320dp"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="890dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="170dp"
+        android:background="@drawable/qrcode_bg"
         />
 
+    <!--qrcode-->
     <ImageView
         android:id="@+id/qr_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_marginLeft="1350px"/>
+        android:layout_width="234dp"
+        android:layout_height="234dp"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="934dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="214dp"/>
 
+    <!--group info-->
     <TextView
         android:id="@+id/text_groupid"
-        android:layout_width="512px"
-        android:layout_height="wrap_content"
-        android:textAlignment="center"
-        android:textSize="20dp"
-        android:layout_marginLeft="1350px"
-        android:layout_marginTop="800px"
-        android:textColor="#f1dd08"/>
-</FrameLayout>
+        android:layout_width="234dp"
+        android:layout_height="24dp"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="934dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="504dp"
+        android:gravity="center_horizontal|top"
+        android:textAppearance="@style/group_item_info"/>
+</RelativeLayout>

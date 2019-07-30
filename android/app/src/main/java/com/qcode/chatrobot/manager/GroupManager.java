@@ -260,7 +260,11 @@ public class GroupManager {
             return mGroupList;
         }
     }
-    
+    public int getGroupsSize() {
+        synchronized (mGroupList) {
+            return mGroupList.size();
+        }
+    }
     public void destroy() {
         unbindAllService();
     }

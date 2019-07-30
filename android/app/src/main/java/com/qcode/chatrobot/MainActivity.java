@@ -1,11 +1,15 @@
 package com.qcode.chatrobot;
 
 import android.app.Activity;
+import android.content.ComponentCallbacks;
 import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Bundle;
 
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -59,13 +63,13 @@ public class MainActivity extends Activity implements GroupListener {
         });
         mAdapter = new GroupListAdapter(this.getLayoutInflater());
         mGroupListView.setAdapter(mAdapter);
-        
+       
         mGroupManager = new GroupManager(mContext);
         mGroupManager.registerGroupListener(this);
         mGroupManager.recoveryGroup();//恢复旧数据
         
         Button createBtn = findViewById(R.id.createBtn);
-        createBtn.requestFocus();
+        
         createBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -73,8 +77,13 @@ public class MainActivity extends Activity implements GroupListener {
             }
         });
         
-        mAdapter.setData(mGroupManager.getGroupList());
-    
+        
+        mAdapter.setData( mGroupManager.getGroupList());
+        if ( mGroupManager.getGroupsSize() > 0) {
+            mGroupListView.requestFocus();
+        } else {
+            createBtn.requestFocus();
+        }
         showGroupInfo();
     }
     
