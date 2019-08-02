@@ -8,16 +8,18 @@ extern "C" {
 manager mManager;
 using json = nlohmann::json;
 void start(char *ip, int port, char *data_root_dir) {
+    printf("start in");
     mManager.start(ip, port, data_root_dir);
 }
 
 void createGroup() {
-    int num = 0;
+    printf("api createGroup in\n");
     mManager.createGroup();
+    printf("api createGroup out\n");
 }
 
 void list(char* outdata) {
-    printf("list in\n");
+    printf("api list in\n");
     std::shared_ptr<std::vector<std::shared_ptr<GroupInfo>>> group_list = mManager.getGroupList();
     json result_json;
     for(int i=0; i<group_list->size(); i++) {
@@ -36,6 +38,7 @@ void list(char* outdata) {
         result_json.push_back(item_json);
         groupinfo->UnLock();
     }
+    printf("api list out\n");
     sprintf(outdata, "%s", result_json.dump().c_str());
 }
 }

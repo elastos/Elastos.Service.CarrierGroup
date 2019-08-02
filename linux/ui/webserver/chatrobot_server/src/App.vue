@@ -28,7 +28,7 @@ export default {
         createGroup() {
             window.console.log("createGroup");
             reqwest({
-                    url: "http://127.0.0.1:8384/create",
+                    url: "http://127.0.0.1/create",
                     type: 'json',
                     method: 'get',
                     contentType: 'application/json',

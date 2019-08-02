@@ -27,7 +27,7 @@ void manager::start(std::string ip, int port, std::string data_root_dir) {
     mRootDir = data_root_dir;
     mIp = ip;
     mPort = port;
-
+    printf("manager::start");
     mServiceId = 0;
     mIsReady = false;
     mDataBaseProxy->startDb(mRootDir.c_str());
@@ -80,21 +80,25 @@ void manager::_updateGroupMemberCount(std::string friendid, int member_count) {
 }
 
 int manager::createGroup() {
+    printf("manager createGroup in\n");
     sendMsgToWorkThread("{\"cmd\":1}");
     return 0;
 }
 
 void manager::sendMsgToWorkThread(std::string msg) {
+    printf("sendMsgToWorkThread, in msg:%s\n", msg.c_str());
     std::unique_lock<std::mutex> lk(mQueue_lock);
     mWrite_cond.wait(lk, [this] { return mQueue.size() < MAX_QUEUE_SIZE; });
     mQueue.push(std::make_shared<std::string>(msg));
     lk.unlock();
     mQueue_cond.notify_one();
+    printf("sendMsgToWorkThread, mQueue_cond.notify_one out msg:%s\n", msg.c_str());
 }
 
 int manager::_createGroup() {
     int service_id = ++mServiceId;
     //创建目录data dir
+    printf("manager::_createGroup, service_id:%d\n", service_id);
     const std::string data_dir = mRootDir + std::string("/carrierService") + std::to_string(service_id);
     FileUtils::mkdirs(data_dir.c_str(), 0777);
     mDataBaseProxy->addGroup("", "", data_dir, 0, service_id);
@@ -106,12 +110,16 @@ int manager::_createGroup() {
 void manager::runWorkThread() {
     printf("manager::runWorkThread in\n");
     while (true) {
+        printf("runWorkThread,  lk(mQueue_lock)\n");
         std::unique_lock<std::mutex> lk(mQueue_lock);
+        printf("runWorkThread,  mQueue_cond.wait;  mQueue.empty():%d;\n", mQueue.empty()?1:0);
         mQueue_cond.wait(lk, [this] { return !mQueue.empty(); });
-        if (mQueue.empty()) {
-            return;
-        }
         std::shared_ptr<std::string> result = mQueue.front();
+        printf("runWorkThread,  mQueue.pop();\n");
+        mQueue.pop();
+        printf("runWorkThread,  lk.unlock();;\n");
+        lk.unlock();
+        mWrite_cond.notify_one();
         try {
             auto msg_json = json::parse(result->c_str());
             int cmd = msg_json["cmd"];
@@ -132,6 +140,7 @@ void manager::runWorkThread() {
                     break;
                 }
                 case CreateGroup: {
+                    printf("runWorkThread, CreateGroup mIsReady:%d\n", (mIsReady == true)?1:0);
                     if (!mIsReady) {
                         //临时存储消息
                         mTmpQueue.push(std::make_shared<std::string>("create_group"));
@@ -170,13 +179,14 @@ void manager::runWorkThread() {
                     break;
                 }
             }
+
         } catch (std::exception &e) {
             std::cout << "[exception caught: " << e.what() << "]\n";
         }
-        mQueue.pop();
-        lk.unlock();
-        mWrite_cond.notify_one();
+
+        printf("runWorkThread,  mWrite_cond.notify_all();\n");
     }
+    printf("manager::runWorkThread out\n");
 }
 void manager::recvServiceMsgThread(int client_fd) {
     char buf[512] = {};

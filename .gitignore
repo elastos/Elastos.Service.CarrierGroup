@@ -53,12 +53,12 @@ local.properties
 
 # SVN
 .svn
-
+yarn.lock
 # node.js
 #
 .bin
 npm-debug.log
-
+__pycache__
 # BUCK
 buck-out/
 \.buckd/
