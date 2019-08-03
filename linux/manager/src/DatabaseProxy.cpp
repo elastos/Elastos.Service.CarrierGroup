@@ -162,11 +162,10 @@ bool DatabaseProxy::removeGroup(std::string friendid) {
         }
         group_info->Lock();
         if (group_info->getAddress().compare(friendid) == 0) {
-            mGroupList->erase(std::begin(*mGroupList.get()) + i);
-
             char *errMsg = NULL;
             std::string t_strSql;
-            t_strSql = "delete from group_table where FriendId='" + friendid + "';";
+            t_strSql = "delete from group_table where FriendId='" + friendid + "';\n";
+            printf("removeGroup, t_strSql:%s", t_strSql.c_str());
             //消息直接入库
             int rv = sqlite3_exec(mDb, t_strSql.c_str(), callback, this, &errMsg);
             if (rv != SQLITE_OK) {
@@ -174,8 +173,9 @@ bool DatabaseProxy::removeGroup(std::string friendid) {
                        errMsg);
             }
             group_info->UnLock();
-            printf("removeGroup, friendid:%s", friendid.c_str());
-
+            printf("removeGroup, friendid:%s\n", friendid.c_str());
+            mGroupList->erase(std::begin(*mGroupList.get()) + i);
+            printf("removeGroup, friendid:%s erase\n", friendid.c_str());
             return true;
         }
         group_info->UnLock();

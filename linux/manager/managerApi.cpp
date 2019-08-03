@@ -21,7 +21,11 @@ void createGroup() {
     mManager.createGroup();
     printf("api createGroup out\n");
 }
-
+void removeGroup(int service_id) {
+    printf("api removeGroup in\n");
+    mManager.removeGroup(service_id);
+    printf("api removeGroup out\n");
+}
 void list(char* outdata) {
     printf("api list in\n");
     std::shared_ptr<std::vector<std::shared_ptr<GroupInfo>>> group_list = mManager.getGroupList();

@@ -23,11 +23,12 @@ public:
     void runCommunicationThread();
     void recvServiceMsgThread(int client_fd);
     void runWorkThread();
+    void removeGroup(int service_id);
     std::shared_ptr<std::vector<std::shared_ptr<GroupInfo>>> getGroupList();
 private:
     void sendMsgToWorkThread(std::string msg);
     int _createGroup();
-    void _removeGroup(std::string address);
+    void _removeGroup(std::string address, int socket_fd);
     void _updateGroupNickName(std::string friendid, std::string nick_name);
     void _updateGroupAddress(int service_id, std::string address);
     void _updateGroupMemberCount(std::string friendid, int member_count);

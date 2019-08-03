@@ -19,11 +19,13 @@ public:
     std::string getDataDir();
     int getMemberCount();
     int getServiceId();
+    int getPid();
     void setAddress(std::string address);
     void setNickName(std::string nickname);
     void setDataDir(std::string data_dir);
     void setMemberCount(int member_count);
     void setServiceId(int service_id);
+    void setPid(int pid);
     void Lock();
     void UnLock();
 
@@ -34,6 +36,7 @@ private:
     int mMemberCount;
     int mServiceId;
     std::recursive_mutex mMutex;
+    int mPid;
 };
 
 

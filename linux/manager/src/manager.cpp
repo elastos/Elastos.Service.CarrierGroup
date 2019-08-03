@@ -2,6 +2,8 @@
 // Created by luocf on 2019/7/19.
 //
 #include <stdlib.h>
+#include <signal.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <iostream>
 #include<unistd.h>
@@ -61,12 +63,34 @@ void manager::stop() {
     mDataBaseProxy->closeDb();
 }
 
-void manager::_removeGroup(std::string address) {
+void manager::removeGroup(int service_id) {
+    std::shared_ptr<GroupInfo> group_info = mDataBaseProxy->getGroupInfo(service_id);
+    if (group_info.get() != nullptr) {
+        json msg_json;
+        msg_json["cmd"] = Command_UpdateStatus;
+        msg_json["friendid"] = group_info->getAddress();
+        msg_json["my_socket_fd"] = -1;
+        msg_json["status"] = -1;
+        sendMsgToWorkThread(msg_json.dump());
+    }
+}
+
+void manager::_removeGroup(std::string address, int socket_fd) {
     std::cout << address.c_str() << std::endl;
     std::shared_ptr<GroupInfo> group_info = mDataBaseProxy->getGroupInfo(address);
     int iPid = (int)getpid();
     printf("_removeGroup::in iPid:%d\n", iPid);
     if (group_info.get() != nullptr) {
+        //杀死子进程,关闭socket
+        printf("_removeGroup:: socket_fd:%d\n", socket_fd);
+        if (socket_fd != -1) {
+            close(socket_fd);
+        }
+        int client_pid = group_info->getPid();
+        printf("_removeGroup:: client_pid:%d\n", client_pid);
+        if (client_pid != -1) {
+            kill(client_pid, SIGKILL);
+        }
         const std::string data_dir = group_info->getDataDir();
         mDataBaseProxy->removeGroup(address);
         printf("_removeGroup:: data_dir.c_str():%s\n", data_dir.c_str());
@@ -115,7 +139,6 @@ void manager::sendMsgToWorkThread(std::string msg) {
     mQueue.push(std::make_shared<std::string>(msg));
     lk.unlock();
     mQueue_cond.notify_one();
-    printf("sendMsgToWorkThread, mQueue_cond.notify_one out msg:%s\n", msg.c_str());
 }
 
 int manager::_createGroup() {
@@ -123,8 +146,8 @@ int manager::_createGroup() {
     //创建目录data dir
     int iPid = (int)getpid();
     printf("manager::_createGroup, service_id:%d, iPid:%d\n", service_id, iPid);
-    const std::string data_dir = mRootDir + std::string("/carrierService") + std::to_string(service_id);
-    FileUtils::mkdirs(data_dir.c_str(), 0777);
+    const std::string data_dir = mRootDir + std::string("/carrierService") + std::to_string(service_id)+std::string("/");
+    FileUtils::mkdirs(data_dir.c_str(), S_IRWXU);
     mDataBaseProxy->addGroup("", "", data_dir, 0, service_id);
     std::async(&manager::_bindService, this, service_id, data_dir);
 
@@ -195,8 +218,9 @@ void manager::runWorkThread() {
                 case Command_UpdateStatus: {
                     std::string friendid = msg_json["friendid"];
                     int status = msg_json["status"];
+                    int socket_fd = msg_json["my_socket_fd"];
                     if (status == -1) {
-                        this->_removeGroup(friendid);
+                        this->_removeGroup(friendid, socket_fd);
                     }
                     break;
                 }
@@ -216,6 +240,7 @@ void manager::recvServiceMsgThread(int client_fd) {
     char buf[512] = {};
     json msg;
     msg["cmd"] = Command_Ready;
+    msg["client_fd"] = client_fd;
     std::string result = msg.dump();
     write(client_fd, result.c_str(), strlen(result.c_str()));
 
@@ -307,6 +332,10 @@ void manager::_bindService(int service_id, const std::string data_dir) {
             perror("fork");
             exit(1);
         default:
+            std::shared_ptr<GroupInfo> group_info = mDataBaseProxy->getGroupInfo(service_id);
+            if (group_info.get() != nullptr) {
+                group_info->setPid(pid);
+            }
             printf("exec is completed\n");
             break;
 

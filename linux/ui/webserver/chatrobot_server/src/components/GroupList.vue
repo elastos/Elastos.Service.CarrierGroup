@@ -88,6 +88,7 @@ export default {
         this.loading = false
         return
       }
+      window.console.log("handleInfiniteOnLoad in");
         this.fetchData((res) => {
            this.data = JSON.parse(res.data)
            this.updateCurInfo();

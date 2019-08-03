@@ -48,7 +48,6 @@ public:
     std::shared_ptr<std::vector<std::shared_ptr<GroupInfo>>> getGroupList();
 
     bool removeGroup(std::string friendid);
-
     bool startDb(const char *data_dir);
 
     bool closeDb();

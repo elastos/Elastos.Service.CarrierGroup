@@ -12,7 +12,8 @@ GroupInfo::GroupInfo(std::string friedn_id, std::string nickname,
         mNickName(nickname),
         mDataDir(data_dir),
         mMemberCount(membercount),
-        mServiceId(service_id) {
+        mServiceId(service_id),
+        mPid(-1){
 }
 GroupInfo::~GroupInfo() {
     
@@ -55,6 +56,14 @@ void GroupInfo::setMemberCount(int member_count) {
 
 void GroupInfo::setServiceId(int service_id) {
     mServiceId = service_id;
+}
+
+int GroupInfo::getPid() {
+    return mPid;
+}
+
+void GroupInfo::setPid(int pid) {
+    mPid = pid;
 }
 
 void GroupInfo::Lock() {

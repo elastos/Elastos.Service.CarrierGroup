@@ -259,7 +259,8 @@ namespace chatrobot {
         mDatabaseProxy->closeDb();
     }
 
-    int CarrierRobot::start(const char *data_dir, int service_id) {
+    int CarrierRobot::start(const char *data_dir, int service_id, int my_socket_fd) {
+        mMySocketFd = my_socket_fd;
         ElaOptions carrierOpts;
         ElaCallbacks carrierCallbacks;
         mLocalPath = std::make_shared<std::string>(data_dir);
@@ -481,6 +482,7 @@ namespace chatrobot {
                 json msg;
                 msg["cmd"] = Command_UpdateStatus;
                 msg["friendid"] = mAddress.c_str();
+                msg["my_socket_fd"] = mMySocketFd;
                 msg["status"] = mStatus;
                 sendMsgForManager(msg.dump());
                 //好友解除关系

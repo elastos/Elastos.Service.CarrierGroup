@@ -35,7 +35,7 @@ namespace chatrobot {
             friend class CarrierRobot;
         };
         ~CarrierRobot();
-        int start(const char* data_dir, int service_id);
+        int start(const char* data_dir, int service_id, int my_socket_fd);
         void stop();
         int getAddress(std::string& address);
         int acceptFriend(std::shared_ptr<std::string>friendid);
@@ -86,6 +86,7 @@ namespace chatrobot {
         std::shared_ptr<CarrierConfig> mCarrierConfig;
         std::shared_ptr<DatabaseProxy> mDatabaseProxy;
         int mStatus;
+        int mMySocketFd;
         std::function <void(const std::string)> mCarrierCallBack;
         std::string mAddress;
         void sendMsgForManager(std::string msg);

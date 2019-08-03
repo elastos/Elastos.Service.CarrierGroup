@@ -32,8 +32,9 @@ INCLUDE_DIRECTORIES(../common/)
 
 LINK_DIRECTORIES("source/")
 add_executable(carrierService ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(carrierService pthread sqlite3 crystal elacarrier elafiletrans elasession)
-        #"${PROJECT_SOURCE_DIR}/lib/x86_64/libcrystal.so"
-        #"${PROJECT_SOURCE_DIR}/lib/x86_64/libelacarrier.so"
-        #"${PROJECT_SOURCE_DIR}/lib/x86_64/libelafiletrans.so"
-        #"${PROJECT_SOURCE_DIR}/lib/x86_64/libelasession.so")
+#TARGET_LINK_LIBRARIES(carrierService pthread sqlite3 crystal elacarrier elafiletrans elasession)
+TARGET_LINK_LIBRARIES(carrierService pthread sqlite3
+        "${PROJECT_SOURCE_DIR}/lib/x86_64/libcrystal.so"
+        "${PROJECT_SOURCE_DIR}/lib/x86_64/libelacarrier.so"
+        "${PROJECT_SOURCE_DIR}/lib/x86_64/libelafiletrans.so"
+        "${PROJECT_SOURCE_DIR}/lib/x86_64/libelasession.so")

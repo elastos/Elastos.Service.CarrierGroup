@@ -55,9 +55,11 @@ void carrierService::runCommunicationThread() {
         perror("read"), exit(-1);
     }
     //收到manager消息即可，不用分析是否是Ready的消息。
+    auto msg_json = json::parse(buf);
+
     printf("连接成功\n");
     mCarrierRobot->registerCarrierCallBack(std::bind(&carrierService::sendMsgToWorkThread, this, std::placeholders::_1));
-    mCarrierRobot->start(mRootDir.c_str(), mServiceId);
+    mCarrierRobot->start(mRootDir.c_str(), mServiceId, msg_json["client_fd"]);
     mCarrierRobot->runCarrier();
 
     while (true) {

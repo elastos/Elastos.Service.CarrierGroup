@@ -91,10 +91,11 @@ int FileUtils::mkdirs(const char* path, mode_t mode)
 bool FileUtils::rmdir(const char* path)
 {
     if (FileUtils::exists(path) == false) {
-        printf("file dir not exist, path:%s\n", path);
+        printf("FileUtils::rmdir file dir not exist, path:%s\n", path);
         return false;
     }
     rmdir(path);
+    printf("FileUtils::rmdir path:%s\n", path);
     return true;
 }
 
