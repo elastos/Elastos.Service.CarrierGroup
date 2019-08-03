@@ -7,9 +7,13 @@
 extern "C" {
 manager mManager;
 using json = nlohmann::json;
+bool ready = false;
 void start(char *ip, int port, char *data_root_dir) {
-    printf("start in");
-    mManager.start(ip, port, data_root_dir);
+    printf("start in, ready:%d", ready?1:0);
+    if (ready == false) {
+        mManager.start(ip, port, data_root_dir);
+        ready = true;
+    }
 }
 
 void createGroup() {

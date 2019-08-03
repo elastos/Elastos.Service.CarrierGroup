@@ -9,12 +9,6 @@ import chatrobot_restful_api as chatrobot
 app = create_app(chatrobot, "/home/lcf/workspace/testData/")
 CORS(app, resource={r"/*":{"orgins":"*"}}, supports_credentials=True)
 
-@app.route('/test', methods=['GET'])
-def test():
-    print("test in")
-    chatrobot.createGroupTest();
-    return jsonify({'result':"success"});
-
 @app.route('/create', methods=['GET'])
 def create():
     print("create in")

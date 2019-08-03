@@ -6,10 +6,6 @@ def start(ip, port, data_dir):
     data_dir = bytes(data_dir,  encoding='utf-8')
     print(hostname, port, data_dir)
     carrierManager.start(hostname,port,data_dir)
-def createGroupTest():
-    print("createGroupTest in");
-    carrierManager.createGroup()
-    print("createGroupTest out");
 
 def createGroup():
     print("createGroup in");

@@ -24,10 +24,12 @@ using json = nlohmann::json;
 constexpr int MAX_QUEUE_SIZE = 10;
 
 void manager::start(std::string ip, int port, std::string data_root_dir) {
+
     mRootDir = data_root_dir;
     mIp = ip;
     mPort = port;
-    printf("manager::start");
+    int iPid = (int)getpid();
+    printf("manager::start iPid:%d\n", iPid);
     mServiceId = 0;
     mIsReady = false;
     mDataBaseProxy->startDb(mRootDir.c_str());
@@ -61,32 +63,53 @@ void manager::stop() {
 
 void manager::_removeGroup(std::string address) {
     std::cout << address.c_str() << std::endl;
-    mDataBaseProxy->removeGroup(address);
+    std::shared_ptr<GroupInfo> group_info = mDataBaseProxy->getGroupInfo(address);
+    int iPid = (int)getpid();
+    printf("_removeGroup::in iPid:%d\n", iPid);
+    if (group_info.get() != nullptr) {
+        const std::string data_dir = group_info->getDataDir();
+        mDataBaseProxy->removeGroup(address);
+        printf("_removeGroup:: data_dir.c_str():%s\n", data_dir.c_str());
+        //删除目录
+        FileUtils::rmdir(data_dir.c_str());
+    }
 }
 
 void manager::_updateGroupNickName(std::string friendid, std::string nick_name) {
     std::cout << nick_name.c_str() << std::endl;
     mDataBaseProxy->updateGroupNickName(friendid, nick_name);
+    std::shared_ptr<GroupInfo> group_info = mDataBaseProxy->getGroupInfo(friendid);
+    if (group_info.get() != nullptr) {
+        printf("_updateGroupNickName nickname:%s, new nickname:%s\n", nick_name.c_str(), group_info->getNickName().c_str());
+    }
+    int iPid = (int)getpid();
+    printf("_updateGroupNickName::in iPid:%d\n", iPid);
 }
 
 void manager::_updateGroupAddress(int service_id, std::string address) {
     std::cout << address.c_str() << std::endl;
     mDataBaseProxy->updateGroupAddress(service_id, address);
+
 }
 
 void manager::_updateGroupMemberCount(std::string friendid, int member_count) {
     std::cout << std::to_string(member_count).c_str() << std::endl;
     mDataBaseProxy->updateGroupMemberCount(friendid, member_count);
+    std::shared_ptr<GroupInfo> group_info = mDataBaseProxy->getGroupInfo(friendid);
+    if (group_info.get() != nullptr) {
+        printf("_updateGroupMemberCount membercount:%d, new membercount:%d\n", member_count, group_info->getMemberCount());
+    }
 }
 
 int manager::createGroup() {
-    printf("manager createGroup in\n");
+    printf("manager createGroup in ready:%d\n", mIsReady?1:0);
     sendMsgToWorkThread("{\"cmd\":1}");
     return 0;
 }
 
 void manager::sendMsgToWorkThread(std::string msg) {
-    printf("sendMsgToWorkThread, in msg:%s\n", msg.c_str());
+    int iPid = (int)getpid();
+    printf("sendMsgToWorkThread, iPid:%d, msg:%s\n", iPid, msg.c_str());
     std::unique_lock<std::mutex> lk(mQueue_lock);
     mWrite_cond.wait(lk, [this] { return mQueue.size() < MAX_QUEUE_SIZE; });
     mQueue.push(std::make_shared<std::string>(msg));
@@ -98,7 +121,8 @@ void manager::sendMsgToWorkThread(std::string msg) {
 int manager::_createGroup() {
     int service_id = ++mServiceId;
     //创建目录data dir
-    printf("manager::_createGroup, service_id:%d\n", service_id);
+    int iPid = (int)getpid();
+    printf("manager::_createGroup, service_id:%d, iPid:%d\n", service_id, iPid);
     const std::string data_dir = mRootDir + std::string("/carrierService") + std::to_string(service_id);
     FileUtils::mkdirs(data_dir.c_str(), 0777);
     mDataBaseProxy->addGroup("", "", data_dir, 0, service_id);
@@ -109,15 +133,16 @@ int manager::_createGroup() {
 
 void manager::runWorkThread() {
     printf("manager::runWorkThread in\n");
+    int iPid = (int)getpid();
     while (true) {
-        printf("runWorkThread,  lk(mQueue_lock)\n");
+        printf("runWorkThread,  lk(mQueue_lock) iPid:%d\n", iPid);
         std::unique_lock<std::mutex> lk(mQueue_lock);
-        printf("runWorkThread,  mQueue_cond.wait;  mQueue.empty():%d;\n", mQueue.empty()?1:0);
+        printf("runWorkThread,  mQueue_cond.wait;  mQueue.empty():%d, iPid:%d\n", mQueue.empty()?1:0, iPid);
         mQueue_cond.wait(lk, [this] { return !mQueue.empty(); });
         std::shared_ptr<std::string> result = mQueue.front();
-        printf("runWorkThread,  mQueue.pop();\n");
+        printf("runWorkThread,  mQueue.pop(), iPid:%d\n", iPid);
         mQueue.pop();
-        printf("runWorkThread,  lk.unlock();;\n");
+        printf("runWorkThread,  lk.unlock(), iPid:%d\n", iPid);
         lk.unlock();
         mWrite_cond.notify_one();
         try {
@@ -140,7 +165,7 @@ void manager::runWorkThread() {
                     break;
                 }
                 case CreateGroup: {
-                    printf("runWorkThread, CreateGroup mIsReady:%d\n", (mIsReady == true)?1:0);
+                    printf("runWorkThread, CreateGroup mIsReady:%d, iPid:%d\n", (mIsReady == true)?1:0, iPid);
                     if (!mIsReady) {
                         //临时存储消息
                         mTmpQueue.push(std::make_shared<std::string>("create_group"));
@@ -183,8 +208,7 @@ void manager::runWorkThread() {
         } catch (std::exception &e) {
             std::cout << "[exception caught: " << e.what() << "]\n";
         }
-
-        printf("runWorkThread,  mWrite_cond.notify_all();\n");
+        printf("runWorkThread,  mWrite_cond.notify_all(); iPid:%d\n", iPid);
     }
     printf("manager::runWorkThread out\n");
 }

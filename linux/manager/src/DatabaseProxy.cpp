@@ -80,6 +80,7 @@ void DatabaseProxy::updateGroupNickName(std::string friendid, std::string nickna
                    errMsg);
         }
     }
+
 }
 
 void DatabaseProxy::addGroup(std::string friendid,
@@ -162,6 +163,7 @@ bool DatabaseProxy::removeGroup(std::string friendid) {
         group_info->Lock();
         if (group_info->getAddress().compare(friendid) == 0) {
             mGroupList->erase(std::begin(*mGroupList.get()) + i);
+
             char *errMsg = NULL;
             std::string t_strSql;
             t_strSql = "delete from group_table where FriendId='" + friendid + "';";
@@ -172,11 +174,13 @@ bool DatabaseProxy::removeGroup(std::string friendid) {
                        errMsg);
             }
             group_info->UnLock();
+            printf("removeGroup, friendid:%s", friendid.c_str());
+
             return true;
         }
         group_info->UnLock();
     }
-    Log::I(TAG, "removeGroup not exist, friendid:%s", friendid.c_str());
+    printf("removeGroup not exist, friendid:%s", friendid.c_str());
     return false;
 }
 
@@ -216,15 +220,15 @@ void DatabaseProxy::syncGroupList() {
             NULL
     );
     if (rc != SQLITE_OK) {
-        Log::I(TAG, "sqlite3_prepare_v2 error:%s", sqlite3_errmsg(mDb));
+        printf("sqlite3_prepare_v2 error:%s", sqlite3_errmsg(mDb));
         return;
     }
 
     rc = sqlite3_get_table(mDb, t_strSql.c_str(), &azResult, &nrow, &ncolumn, &errMsg);
     if (rc == SQLITE_OK) {
-        Log::I(TAG, "syncMemberList, successful sql:%s", t_strSql.c_str());
+        printf("syncMemberList, successful sql:%s", t_strSql.c_str());
     } else {
-        Log::I(TAG, "syncMemberList, Can't get table: %s", sqlite3_errmsg(mDb));
+        printf("syncMemberList, Can't get table: %s", sqlite3_errmsg(mDb));
         return;
     }
 

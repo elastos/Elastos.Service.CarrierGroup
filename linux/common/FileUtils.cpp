@@ -56,6 +56,7 @@ bool FileUtils::isdir(const char* path)
 
   return false;
 }
+
 int FileUtils::mkdirs(const char* path, mode_t mode)
 {
   // const cast for hack
@@ -86,6 +87,15 @@ int FileUtils::mkdirs(const char* path, mode_t mode)
   }
 
   return 0;
+}
+bool FileUtils::rmdir(const char* path)
+{
+    if (FileUtils::exists(path) == false) {
+        printf("file dir not exist, path:%s\n", path);
+        return false;
+    }
+    rmdir(path);
+    return true;
 }
 
 int FileUtils::readFromFile(const char* path, std::shared_ptr<uint8_t>& data)
