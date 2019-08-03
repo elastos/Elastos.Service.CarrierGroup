@@ -15,7 +15,6 @@ public:
 
   static bool isdir(const char* path);
   static int mkdirs(const char* path, mode_t mode = DEFAULT_MODE);
-  static bool rmdir(const char* path);
   static int readFromFile(const char* path, std::shared_ptr<uint8_t>& data);
   static int writeToFile(const char* path, const uint8_t data[], std::size_t size);
 

@@ -92,10 +92,9 @@ void manager::_removeGroup(std::string address, int socket_fd) {
             kill(client_pid, SIGKILL);
         }
         const std::string data_dir = group_info->getDataDir();
-        mDataBaseProxy->removeGroup(address);
         printf("_removeGroup:: data_dir.c_str():%s\n", data_dir.c_str());
-        //删除目录
-        FileUtils::rmdir(data_dir.c_str());
+        //删除目录,目录手动删除，备用数据
+        mDataBaseProxy->removeGroup(address);
     }
 }
 

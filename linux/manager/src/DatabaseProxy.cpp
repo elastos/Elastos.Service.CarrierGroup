@@ -173,9 +173,8 @@ bool DatabaseProxy::removeGroup(std::string friendid) {
                        errMsg);
             }
             group_info->UnLock();
-            printf("removeGroup, friendid:%s\n", friendid.c_str());
             mGroupList->erase(std::begin(*mGroupList.get()) + i);
-            printf("removeGroup, friendid:%s erase\n", friendid.c_str());
+            printf("removeGroup, erase friendid:%s \n", friendid.c_str());
             return true;
         }
         group_info->UnLock();
