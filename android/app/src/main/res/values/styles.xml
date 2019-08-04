@@ -9,7 +9,7 @@
     </style>
     <style name="group_item_info">
         <item name="android:textSize">
-            17sp
+            26sp
         </item>
         <item name="android:textColor">
             #CCFFFFFF
@@ -18,7 +18,7 @@
     <style name="list_item_title">
 
         <item name="android:textSize">
-            20sp
+            30sp
         </item>
 
         <item name="android:textColor">

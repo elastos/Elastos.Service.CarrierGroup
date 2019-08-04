@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
-              android:layout_height="70dp"
+              android:layout_height="103dp"
               android:orientation="horizontal"
-                android:background="@drawable/listview_item_bg_selector">
+              android:background="@drawable/list_item_bg">
     <ImageView
-        android:layout_width="28dp"
-        android:layout_height="30dp"
-        android:layout_marginLeft="23dp"
-        android:layout_marginTop="20dp"
+        android:layout_width="42dp"
+        android:layout_height="45dp"
+        android:layout_marginLeft="35dp"
+        android:layout_marginTop="30dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:background="@drawable/list_item_icon"
@@ -16,9 +16,9 @@
 
     <TextView
         android:id="@+id/txtNickName"
-        android:layout_width="524dp"
-        android:layout_height="70dp"
-        android:layout_marginLeft="70dp"
+        android:layout_width="835dp"
+        android:layout_height="103dp"
+        android:layout_marginLeft="105dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:gravity="center_vertical|left"
@@ -27,12 +27,12 @@
 
     <TextView
         android:id="@+id/txtNum"
-        android:layout_width="134dp"
-        android:layout_height="70dp"
+        android:layout_width="148dp"
+        android:layout_height="103dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:gravity="center_vertical|right"
-        android:layout_marginLeft="600dp"
+        android:layout_marginLeft="835dp"
         android:textAppearance="@style/list_item_title"
         />
 </RelativeLayout>

@@ -1,22 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="1280dp"
-    android:layout_height="720dp"
-    android:background="#00000000">
-    <!--background-->
+    android:layout_width="1920dp"
+    android:layout_height="1080dp"
+    android:background="#000000">
     <ImageView
-        android:layout_width="1280dp"
-        android:layout_height="720dp"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="-24dp"
-        android:background="@drawable/background_drawable"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/background"
         />
     <!--title-->
     <ImageView
-        android:layout_width="1280dp"
-        android:layout_height="100dp"
+        android:layout_width="1920dp"
+        android:layout_height="150dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_marginTop="-24dp"
@@ -25,58 +21,59 @@
     <!--list-->
     <ListView
         android:id="@+id/groupList"
-        android:layout_width="750dp"
-        android:layout_height="450dp"
+        android:layout_width="1124dp"
+        android:layout_height="715dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="155dp"
-        android:layout_marginLeft="70dp"
+        android:layout_marginTop="256dp"
+        android:layout_marginLeft="106dp"
         android:cacheColorHint="#00000000"
         android:divider = "#00000000"
         android:listSelector="@drawable/listview_item_bg_selector"
-        android:dividerHeight="20dp"
+        android:dividerHeight="40dp"
         />
+
     <!--create group button-->
     <Button
         android:id="@+id/createBtn"
-        android:layout_width="320dp"
-        android:layout_height="76dp"
+        android:layout_width="478dp"
+        android:layout_height="114dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="890dp"
-        android:layout_marginTop="548dp"
+        android:layout_marginLeft="1336dp"
+        android:layout_marginTop="822dp"
         android:background="@drawable/create_btn_selector"
         />
     <!--qrcode bg-->
     <ImageView
-        android:layout_width="320dp"
-        android:layout_height="320dp"
+        android:layout_width="478dp"
+        android:layout_height="478dp"
         android:layout_alignParentLeft="true"
-        android:layout_marginLeft="890dp"
+        android:layout_marginLeft="1336dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="170dp"
+        android:layout_marginTop="256dp"
         android:background="@drawable/qrcode_bg"
         />
 
     <!--qrcode-->
     <ImageView
         android:id="@+id/qr_image"
-        android:layout_width="234dp"
-        android:layout_height="234dp"
+        android:layout_width="350dp"
+        android:layout_height="350dp"
         android:layout_alignParentLeft="true"
-        android:layout_marginLeft="934dp"
+        android:layout_marginLeft="1400dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="214dp"/>
+        android:layout_marginTop="320dp"/>
 
     <!--group info-->
     <TextView
         android:id="@+id/text_groupid"
-        android:layout_width="234dp"
-        android:layout_height="24dp"
+        android:layout_width="478dp"
+        android:layout_height="36dp"
         android:layout_alignParentLeft="true"
-        android:layout_marginLeft="934dp"
+        android:layout_marginLeft="1336dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="504dp"
+        android:layout_marginTop="732dp"
         android:gravity="center_horizontal|top"
         android:textAppearance="@style/group_item_info"/>
 </RelativeLayout>

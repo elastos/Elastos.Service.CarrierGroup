@@ -1,6 +1,7 @@
 package com.qcode.chatrobot;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.ComponentCallbacks;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -9,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Bundle;
 
+import android.support.annotation.NonNull;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -34,9 +36,50 @@ public class MainActivity extends Activity implements GroupListener {
     private GroupListAdapter mAdapter;
     private GroupManager mGroupManager;
     private int mCurrentGroupId;
+    /**
+     * 屏幕适配
+     * 设计图宽360dp
+     */
+    private static float sNoncompatDensity;
+    private static float sNoncompatScaledDensity;
+    
+    private static void setCustomDensity(@NonNull Activity activity, @NonNull final Application application) {
+        DisplayMetrics appDisplayMetrics = application.getResources().getDisplayMetrics();
+        if (sNoncompatDensity == 0) {
+            sNoncompatDensity = appDisplayMetrics.density;
+            sNoncompatScaledDensity = appDisplayMetrics.scaledDensity;
+            application.registerComponentCallbacks(new ComponentCallbacks() {
+                @Override
+                public void onConfigurationChanged(Configuration newConfig) {
+                    if (newConfig != null && newConfig.fontScale > 0) {
+                        sNoncompatScaledDensity = application.getResources().getDisplayMetrics().scaledDensity;
+                    }
+                }
+                
+                @Override
+                public void onLowMemory() {
+                
+                }
+            });
+        }
+        float targetDensity = 1.0f;//appDisplayMetrics.density;
+        float targetScaledDensity = targetDensity * (sNoncompatScaledDensity / sNoncompatDensity);
+        int targetDensityDpi = (int) (240 * targetDensity);
+        
+        appDisplayMetrics.density = targetDensity;
+        appDisplayMetrics.scaledDensity = targetScaledDensity;
+        appDisplayMetrics.densityDpi = targetDensityDpi;
+        
+        DisplayMetrics activityDisplayMetrics = activity.getResources().getDisplayMetrics();
+        activityDisplayMetrics.density = targetDensity;
+        activityDisplayMetrics.scaledDensity = targetScaledDensity;
+        activityDisplayMetrics.densityDpi = targetDensityDpi;
+    }
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setCustomDensity(this, this.getApplication());
         setContentView(R.layout.activity_main);
         mContext = this.getApplicationContext();
         mCurrentGroupId = -1;
