@@ -2,6 +2,7 @@ ChatRobot部署说明(Ubuntu 18.04上使用uWSGI和Nginx为Flask应用程序提�
 第1步 - 从Ubuntu存储库安装组件
 sudo apt update
 sudo apt install python3-pip python3-dev build-essential libssl-dev libffi-dev python3-setuptools
+sudo apt install nginx
 
 第2步 - 创建Python虚拟环境
 sudo apt install python3-venv
@@ -17,6 +18,8 @@ source venv_chatrobot/bin/activate
 pip install wheel（在激活虚拟环境时，都应该使用pip命令（而不是pip3 ））
 安装Flask和uWSGI：
 pip install uwsgi flask
+pip install flask_cors
+deactivate
 
 第4步 - 创建systemd单元文件
 sudo nano /etc/systemd/system/chatrobot.service
