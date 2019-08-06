@@ -69,9 +69,43 @@ sudo ldconfig
 第7步 - 重启
 sudo reboot
 
-第8步 - 启动web ui demo
+**********启动web ui demo*******
+安装必要软件库
+sudo apt install curl
+----------------------------------------------------
+按照以下步骤在 Ubuntu 16.04/18.04 系统上安装 Yarn：
+步骤1.添加GPG密钥
+
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+
+步骤2.添加Yarn存储库
+
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+
+步骤3.更新包列表并安装Yarn
+
+sudo apt update
+sudo apt install yarn
+
+如果您的系统上尚未安装 Node.js，则上面的命令将安装它。 那些使用 nvm 的人可以跳过 Node.js 安装：
+
+sudo apt install --no-install-recommends yarn
+
+步骤4.检查Yarn的版本
+
+要验证 Yarn 是否已成功安装，请运行以下命令以打印 Yarn 版本号：
+
+yarn --version
+--------------------------------------------------------------
+安装Vue
+yarn global add @vue/cli
+yarn add babel-plugin-import --dev
+sudo apt install npm
+cd /home/lcf/workspace/ChatRobot/linux/ui/webserver
+npm i --save ant-design-vue
 cd /home/lcf/workspace/ChatRobot/linux/ui/webserver/chatrobot_server
+npm install
+npm install --save @chenfengyuan/vue-qrcode
+
 yarn serve
-
-
 
