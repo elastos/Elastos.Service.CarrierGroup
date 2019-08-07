@@ -20,14 +20,25 @@ android {
     }
     signingConfigs {
         release {
+            def keystoreDir = "$rootProject.projectDir/keystore"
+            def propfile = new File(keystoreDir + "/keystore.properties")
+            Properties props = new Properties()
+            props.load(new FileInputStream(propfile))
+
+            storeFile = new File(keystoreDir + "/" + props.RELEASE_STORE_FILE)
+            keyAlias = props.RELEASE_KEY_ALIAS
+            storePassword = props.RELEASE_STORE_PASSWORD
+            keyPassword = props.RELEASE_KEY_PASSWORD
+
             // Assign in keystore.gradle
-            storeFile file("?"); storePassword "?";
-            keyAlias "?"; keyPassword "?";
+//            storeFile file("?"); storePassword "?";
+//            keyAlias "?"; keyPassword "?";
         }
     }
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -47,8 +58,9 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
-project.ext {
-    keystoreDirPath = "$rootProject.projectDir/keystore/"
-}
-apply from: "$rootProject.projectDir/keystore/keystore.gradle"
+
+//project.ext {
+//    keystoreDirPath = "$rootProject.projectDir/keystore/"
+//}
+//apply from: "$rootProject.projectDir/keystore/keystore.gradle"
 
