@@ -1,4 +1,6 @@
 ChatRobot部署说明(Ubuntu 18.04上使用uWSGI和Nginx为Flask应用程序提供服务)
+注意将xxxxxxx替换成有效的用户名
+
 第1步 - 从Ubuntu存储库安装组件
 sudo apt update
 sudo apt install python3-pip python3-dev build-essential libssl-dev libffi-dev python3-setuptools
@@ -6,7 +8,7 @@ sudo apt install nginx
 
 第2步 - 创建Python虚拟环境
 sudo apt install python3-venv
-cd /home/lcf/workspace/ChatRobot/linux/ui
+cd /home/xxxxxxx/workspace/ChatRobot/linux/ui
 创建一个虚拟环境来存储Flask项目的Python需求
 python3.6 -m venv venv_chatrobot
  在虚拟环境中安装应用程序之前，需要将其激活。 输入以下命令：
@@ -20,8 +22,16 @@ pip install wheel（在激活虚拟环境时，都应该使用pip命令（而不
 pip install uwsgi flask
 pip install flask_cors
 deactivate
-
-第4步 - 创建systemd单元文件
+第4步 - 修改chatrobot 配置文件
+/home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver/chatrobot_config.ini
+修改各服务的数据存放根目录
+--------------------------------------------------
+[chatrobot]
+data_dir = /home/xxxxxxx/workspace/testData
+socket_ip = 127.0.0.1
+socket_port = 2222
+--------------------------------------------------
+第5步 - 创建systemd单元文件
 sudo nano /etc/systemd/system/chatrobot.service
 注意路径修正为相应工程路径
 -------------------------------------------------
@@ -30,11 +40,11 @@ Description=uWSGI instance to serve chatrobot
 After=network.target
 
 [Service]
-User=lcf
+User=xxxxxxx
 Group=www-data
-WorkingDirectory=/home/lcf/workspace/ChatRobot/linux/ui/appserver
-Environment="PATH=/home/lcf/workspace/ChatRobot/linux/ui/venv_chatrobot/bin;"
-ExecStart=/home/lcf/workspace/ChatRobot/linux/ui/venv_chatrobot/bin/uwsgi --ini chatrobot.ini
+WorkingDirectory=/home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver
+Environment="PATH=/home/xxxxxxx/workspace/ChatRobot/linux/ui/venv_chatrobot/bin;"
+ExecStart=/home/xxxxxxx/workspace/ChatRobot/linux/ui/venv_chatrobot/bin/uwsgi --ini chatrobot.ini
 
 [Install]
 WantedBy=multi-user.target
@@ -42,7 +52,7 @@ WantedBy=multi-user.target
 sudo systemctl start chatrobot
 sudo systemctl enable chatrobot
 
-第5步 - 将Nginx配置为代理请求
+第6步 - 将Nginx配置为代理请求
 sudo nano /etc/nginx/sites-available/chatrobot
 注意路径修正为相应工程路径
 ------------------------------------------------------
@@ -52,7 +62,7 @@ server {
 
     location / {
         include uwsgi_params;
-        uwsgi_pass unix:/home/lcf/workspace/ChatRobot/linux/ui/appserver/chatrobot.sock;
+        uwsgi_pass unix:/home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver/chatrobot.sock;
     }
 }
 ---------------------------------------------------------
@@ -62,11 +72,11 @@ sudo nginx -t
 sudo systemctl restart nginx
 sudo ufw allow 'Nginx Full'
 
-第6步 - 环境变量设置
-sudo sh -c "echo /home/lcf/workspace/ChatRobot/linux/service/lib/x86_64 > /etc/ld.so.conf.d/chatrobot_lib.conf"
+第7步 - 环境变量设置
+sudo sh -c "echo /home/xxxxxxx/workspace/ChatRobot/linux/service/lib/x86_64 > /etc/ld.so.conf.d/chatrobot_lib.conf"
 sudo ldconfig
 
-第7步 - 重启
+第8步 - 重启
 sudo reboot
 
 **********启动web ui demo*******
@@ -101,9 +111,9 @@ yarn --version
 yarn global add @vue/cli
 yarn add babel-plugin-import --dev
 sudo apt install npm
-cd /home/lcf/workspace/ChatRobot/linux/ui/webserver
+cd /home/xxxxxxx/workspace/ChatRobot/linux/ui/webserver
 npm i --save ant-design-vue
-cd /home/lcf/workspace/ChatRobot/linux/ui/webserver/chatrobot_server
+cd /home/xxxxxxx/workspace/ChatRobot/linux/ui/webserver/chatrobot_server
 npm install
 npm install --save @chenfengyuan/vue-qrcode
 

@@ -6,7 +6,7 @@ from flask_cors import CORS
 from server_wsgi import create_app
 import chatrobot_restful_api as chatrobot
 
-app = create_app(chatrobot, "/home/lcf/workspace/testData/")
+app = create_app(chatrobot)
 CORS(app, resource={r"/*":{"orgins":"*"}}, supports_credentials=True)
 
 @app.route('/create', methods=['GET'])
