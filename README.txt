@@ -23,8 +23,10 @@ pip install uwsgi flask
 pip install flask_cors
 deactivate
 第4步 - 修改chatrobot 配置文件
+1.创建数据存放根目录
+mkdir /home/xxxxxxx/workspace/testData
+2.修改配置文件内容：data_dir---各服务的数据存放根目录、socket_ip/socket_port----各服务与manager通信的ip与端口号
 /home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver/chatrobot_config.ini
-修改各服务的数据存放根目录
 --------------------------------------------------
 [chatrobot]
 data_dir = /home/xxxxxxx/workspace/testData
