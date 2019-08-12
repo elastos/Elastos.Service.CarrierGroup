@@ -158,7 +158,7 @@ public class MainActivity extends Activity implements GroupListener {
                         ImageView view = findViewById(R.id.qr_image);
                         view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
                         TextView text_userid = findViewById(R.id.text_groupid);
-                        text_userid.setText("当前为："+(id+1)+"群");
+                        text_userid.setText("Current Group："+(id+1)+"");
                     }
                 }
             }

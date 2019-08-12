@@ -22,7 +22,7 @@
     <ListView
         android:id="@+id/groupList"
         android:layout_width="1124dp"
-        android:layout_height="715dp"
+        android:layout_height="670dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_marginTop="256dp"
@@ -73,7 +73,7 @@
         android:layout_alignParentLeft="true"
         android:layout_marginLeft="1336dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="732dp"
+        android:layout_marginTop="756dp"
         android:gravity="center_horizontal|top"
         android:textAppearance="@style/group_item_info"/>
 </RelativeLayout>
