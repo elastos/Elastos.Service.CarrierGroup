@@ -68,7 +68,7 @@ public class GroupListAdapter extends BaseAdapter {
             }
             mNickView.setText(nickname);//设置参数
             mNumView = (TextView) view.findViewById(R.id.txtNum);//找到Textviewname
-            mNumView.setText(" 人数： "+mGroupList.get(position).mMemberCount);//设置参数
+            mNumView.setText(" Members： "+mGroupList.get(position).mMemberCount);//设置参数
         }
         return view;
     }
