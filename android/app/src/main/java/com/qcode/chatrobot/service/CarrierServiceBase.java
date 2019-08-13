@@ -31,7 +31,7 @@ public class CarrierServiceBase extends Service {
     private CarrierProxy mCarrierProxy;
     private int mMemberNum = -1;
     private String mGroupNickName = null;
-    private int mGroupStatus = -1;
+    private int mGroupStatus = -2;//初始状态-2， -1删除状态，0在线状态
     
     private Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     
@@ -221,7 +221,7 @@ public class CarrierServiceBase extends Service {
         Log.d(TAG, "sendCarrierGroupStatus");
         if (clientMessenger != null) {
             synchronized (mCarrierProxy) {
-                if (mGroupStatus != -1) {
+                if (mGroupStatus != -2) {
                     try {
                         Message reply_msg = new Message();
                         Bundle reply_bundle = new Bundle();
