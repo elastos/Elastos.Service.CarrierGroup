@@ -31,7 +31,7 @@
 <script>
 import reqwest from 'reqwest'
 import infiniteScroll from 'vue-infinite-scroll'
-const fakeDataUrl = 'http://127.0.0.1/groups'
+const fakeDataUrl = window.location.href.split(":8080")[0]+'/groups'
 export default {
   directives: { infiniteScroll },
   data () {
