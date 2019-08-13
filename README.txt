@@ -1,4 +1,4 @@
-ChatRobot部署说明(Ubuntu 18.04上使用uWSGI和Nginx为Flask应用程序提供服务)
+Elastos.Service.CarrierGroup部署说明(Ubuntu 18.04上使用uWSGI和Nginx为Flask应用程序提供服务)
 注意将xxxxxxx替换成有效的用户名
 
 第1步 - 从Ubuntu存储库安装组件
@@ -8,7 +8,7 @@ sudo apt install nginx
 
 第2步 - 创建Python虚拟环境
 sudo apt install python3-venv
-cd /home/xxxxxxx/workspace/ChatRobot/linux/ui
+cd /home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui
 创建一个虚拟环境来存储Flask项目的Python需求
 python3.6 -m venv venv_chatrobot
  在虚拟环境中安装应用程序之前，需要将其激活。 输入以下命令：
@@ -16,14 +16,14 @@ source venv_chatrobot/bin/activate
 
 第3步 - 设置Flask应用程序
 虚拟环境下，可以安装Flask和uWSGI，并开始设计应用程序。
-首先，使用pip的本地实例安装wheel ，以确保我们的软件包即使丢失了轮存档也会安装：
+首先，使用pip的本地实例安装wheel ，以确保我们的软件包即使丢失了存档也会安装：
 pip install wheel（在激活虚拟环境时，都应该使用pip命令（而不是pip3 ））
 安装Flask和uWSGI：
 pip install uwsgi flask
 pip install flask_cors
 deactivate
 第4步 - 修改chatrobot 配置文件
-/home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver/chatrobot_config.ini
+/home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/appserver/chatrobot_config.ini
 修改各服务的数据存放根目录
 --------------------------------------------------
 [chatrobot]
@@ -42,9 +42,9 @@ After=network.target
 [Service]
 User=xxxxxxx
 Group=www-data
-WorkingDirectory=/home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver
-Environment="PATH=/home/xxxxxxx/workspace/ChatRobot/linux/ui/venv_chatrobot/bin;"
-ExecStart=/home/xxxxxxx/workspace/ChatRobot/linux/ui/venv_chatrobot/bin/uwsgi --ini chatrobot.ini
+WorkingDirectory=/home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/appserver
+Environment="PATH=/home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/venv_chatrobot/bin;"
+ExecStart=/home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/venv_chatrobot/bin/uwsgi --ini chatrobot.ini
 
 [Install]
 WantedBy=multi-user.target
@@ -62,7 +62,7 @@ server {
 
     location / {
         include uwsgi_params;
-        uwsgi_pass unix:/home/xxxxxxx/workspace/ChatRobot/linux/ui/appserver/chatrobot.sock;
+        uwsgi_pass unix:/home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/appserver/chatrobot.sock;
     }
 }
 ---------------------------------------------------------
@@ -73,7 +73,7 @@ sudo systemctl restart nginx
 sudo ufw allow 'Nginx Full'
 
 第7步 - 环境变量设置
-sudo sh -c "echo /home/xxxxxxx/workspace/ChatRobot/linux/service/lib/x86_64 > /etc/ld.so.conf.d/chatrobot_lib.conf"
+sudo sh -c "echo /home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/service/lib/x86_64 > /etc/ld.so.conf.d/chatrobot_lib.conf"
 sudo ldconfig
 
 第8步 - 重启
@@ -111,9 +111,9 @@ yarn --version
 yarn global add @vue/cli
 yarn add babel-plugin-import --dev
 sudo apt install npm
-cd /home/xxxxxxx/workspace/ChatRobot/linux/ui/webserver
+cd /home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/webserver
 npm i --save ant-design-vue
-cd /home/xxxxxxx/workspace/ChatRobot/linux/ui/webserver/chatrobot_server
+cd /home/xxxxxxx/workspace/Elastos.Service.CarrierGroup/linux/ui/webserver/chatrobot_server
 npm install
 npm install --save @chenfengyuan/vue-qrcode
 
