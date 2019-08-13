@@ -118,4 +118,5 @@ npm install
 npm install --save @chenfengyuan/vue-qrcode
 
 yarn serve
+访问url：http://ip:8080进行浏览
 
