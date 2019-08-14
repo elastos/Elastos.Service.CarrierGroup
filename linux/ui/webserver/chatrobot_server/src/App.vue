@@ -28,7 +28,7 @@ export default {
         createGroup() {
             window.console.log("createGroup");
             reqwest({
-                    url: window.location.href.split(":8080")[0]+"/create",
+                    url:window.location.href.replace("8080","8081")+"/create",
                     type: 'json',
                     method: 'get',
                     contentType: 'application/json',
