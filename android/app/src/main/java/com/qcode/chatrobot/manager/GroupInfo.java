@@ -24,6 +24,7 @@ public class GroupInfo implements Comparable<GroupInfo>{
     public String mDataDir;
     public Messenger mClientMessanger;
     public Messenger mMessanger;
+    public int mGroupIndex;
     public int mId;
     public int mMemberCount;
     public ServiceConnection mServiceConnection;
@@ -37,7 +38,7 @@ public class GroupInfo implements Comparable<GroupInfo>{
     
     @Override
     public int compareTo(@NonNull GroupInfo groupInfo) {
-        return mId - groupInfo.mId;
+        return mGroupIndex - groupInfo.mGroupIndex;
     }
     
     private class ClientHandler extends Handler {
@@ -52,7 +53,7 @@ public class GroupInfo implements Comparable<GroupInfo>{
                         synchronized (GroupInfo.this) {
                             if (mAddress == null || !mAddress.equals(address)) {
                                 mAddress = address;
-                                mGroupManager.onGroupInfoUpdate();
+                                mGroupManager.onGroupListUpdate();
                             }
                         }
                     }
@@ -65,7 +66,7 @@ public class GroupInfo implements Comparable<GroupInfo>{
                             int member_count = data.getInt("memberCount");
                             if (member_count != mMemberCount) {
                                 mMemberCount = member_count;
-                                mGroupManager.onGroupInfoUpdate();
+                                mGroupManager.onGroupListUpdate();
                             }
                            
                         }
@@ -79,7 +80,7 @@ public class GroupInfo implements Comparable<GroupInfo>{
                         synchronized (GroupInfo.this) {
                             if (mNickName == null || !mNickName.equals(nickname)) {
                                 mNickName = nickname;
-                                mGroupManager.onGroupInfoUpdate();
+                                mGroupManager.onGroupListUpdate();
                             }
                         }
                     }
@@ -93,7 +94,7 @@ public class GroupInfo implements Comparable<GroupInfo>{
                             final int status = data.getInt("status");
                             if (status == -1) {
                                 mGroupManager.removeGroup(mId);
-                                mGroupManager.onGroupInfoUpdate();
+                                mGroupManager.onGroupListUpdate();
                             }
                         }
                     }

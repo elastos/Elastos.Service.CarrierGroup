@@ -88,17 +88,15 @@ public class MainActivity extends Activity implements GroupListener {
         mGroupListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                GroupInfo groupInfo = mGroupManager.getGroupList().get(position);
-                mGroupManager.switchGroup(groupInfo.mId);
+                showGroupInfo(position);
             }
         });
+       
         mGroupListView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                GroupInfo groupInfo = mGroupManager.getGroupList().get(position);
-                mGroupManager.switchGroup(groupInfo.mId);
+                showGroupInfo(position);
             }
-            
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
         
@@ -127,7 +125,7 @@ public class MainActivity extends Activity implements GroupListener {
         } else {
             createBtn.requestFocus();
         }
-        showGroupInfo();
+        
     }
     
     @Override
@@ -145,33 +143,34 @@ public class MainActivity extends Activity implements GroupListener {
         return "";
     }
     
-    private void showGroupInfo() {
-        int id = mGroupManager.getCurrentId();
-        GroupInfo groupInfo =  mGroupManager.getGroupInfo(id);
+    private void showGroupInfo(int index) {
+        GroupInfo groupInfo = mGroupManager.getGroupList().get(index);
         if (groupInfo != null) {
             synchronized (groupInfo) {
                 String address = groupInfo.mAddress;
-                if (id != mCurrentGroupId || address != null) {
-                    mCurrentGroupId = id;
+                if (groupInfo.mId != mCurrentGroupId || address != null) {
+                    mCurrentGroupId = groupInfo.mId;
                     if (address != null) {
                         MyQRCode qrcode = new MyQRCode(-1, 1);
                         ImageView view = findViewById(R.id.qr_image);
                         view.setImageBitmap(qrcode.getBitmap(address, 512, 512));
                         TextView text_userid = findViewById(R.id.text_groupid);
-                        text_userid.setText("Current Group："+(id+1)+"");
+                        text_userid.setText("Current Group："+(groupInfo.mGroupIndex)+"");
                     }
                 }
             }
         }
-        //更新列表信息
-        mAdapter.setData(mGroupManager.getGroupList());
+        
     }
     @Override
-    public void onGroupInfoUpdate() {
+    public void onGroupListUpdate() {
         mMainThreadHandler.post(new Runnable() {
             @Override
             public void run() {
-                showGroupInfo();
+                //更新列表信息
+                mAdapter.setData(mGroupManager.getGroupList());
+                int index = mGroupListView.getSelectedItemPosition();
+                showGroupInfo(index);
             }
         });
     }

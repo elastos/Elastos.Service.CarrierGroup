@@ -30,12 +30,11 @@ public class GroupManager {
     public static final String TAG = "GroupManager";
     private Context mContext;
     private List<GroupInfo> mGroupList = new ArrayList<GroupInfo>();
-    
+    private int mGroupMaxNum = 0;
     private int mServiceTotal = CommonVar.CONST_SERVICE_LIMIT_NUM;
-    private int mCurrentId = 0;
     private SharedPreferences mPerf;
     public interface GroupListener {
-        void onGroupInfoUpdate();
+        void onGroupListUpdate();
     }
     
     private GroupListener mGroupListener;
@@ -49,6 +48,7 @@ public class GroupManager {
             if (grouplist != null) {
                 try {
                     JSONArray grouplist_json = new JSONArray(grouplist);
+                    int group_max_index = 0;
                     for (int i = 0; i < grouplist_json.length(); i++) {
                         JSONObject groupinfo = grouplist_json.getJSONObject(i);
                         int service_id = groupinfo.getInt("id");
@@ -58,20 +58,25 @@ public class GroupManager {
                         String nickname = groupinfo.optString("nickname", "");
                         String address = groupinfo.optString("address", "");
                         int membercount = groupinfo.optInt("membercount", 0);
+                        int group_index = groupinfo.optInt("group_index", 1);
                         groupInfo.mDataDir =  groupinfo.optString("data_dir", "");
                         groupInfo.mClassName = class_name;
                         groupInfo.mId = service_id;
+                        groupInfo.mGroupIndex = group_index;
+                        if (group_max_index <group_index) {
+                            group_max_index = group_index;
+                        }
                         groupInfo.mNickName = nickname;
                         groupInfo.mAddress = address;
                         groupInfo.mMemberCount = membercount;
                         ServiceConnection service_connection = getServiceConnection();
                         groupInfo.mServiceConnection = service_connection;
                         mGroupList.add(groupInfo);
-    
+                        
                         Intent service_intent = bindService(service_id, service_connection);
                         groupInfo.mServiceIntent = service_intent;
                     }
-                    
+                    mGroupMaxNum = group_max_index;
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -79,7 +84,6 @@ public class GroupManager {
             if (mGroupList.size() > 0) {
                 //排序
                 Collections.sort(mGroupList);
-                mCurrentId = mGroupList.get(0).mId;
             }
         }
     }
@@ -98,6 +102,7 @@ public class GroupManager {
                         group_info.put("address", mGroupList.get(i).mAddress);
                         group_info.put("id", mGroupList.get(i).mId);
                         group_info.put("class_name", mGroupList.get(i).mClassName);
+                        group_info.put("group_index", mGroupList.get(i).mGroupIndex);
                         group_list.put(group_info);
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -116,7 +121,7 @@ public class GroupManager {
         synchronized (mGroupList) {
             int current_total = mGroupList.size();
             if (current_total + 1 > mServiceTotal) {
-                Toast.makeText(mContext, "超出群组上限：" + mServiceTotal, Toast.LENGTH_SHORT).show();
+                Toast.makeText(mContext, "Groups Max：" + mServiceTotal, Toast.LENGTH_SHORT).show();
                 return ;
             }
             
@@ -143,7 +148,7 @@ public class GroupManager {
             GroupInfo group_info = new GroupInfo(this);
             group_info.mId = service_id;
             group_info.mServiceConnection = service_connection;
-            
+            group_info.mGroupIndex = ++mGroupMaxNum;
             Intent service_intent = bindService(service_id, service_connection);
             group_info.mServiceIntent = service_intent;
             mGroupList.add(group_info);
@@ -190,22 +195,17 @@ public class GroupManager {
                         FileUtils.rm(group_info.mDataDir);
                         group_info.mDataDir = null;
                     }
-                   
+                    
                     mGroupList.remove(i);
-                    if (mCurrentId == id && mGroupList.size() > 0) {
-                        mCurrentId = mGroupList.get(0).mId;
-                    } else {
-                        mCurrentId = -1;
-                    }
                     break;
                 }
             }
         }
     }
     
-    public void onGroupInfoUpdate() {
+    public void onGroupListUpdate() {
         if (mGroupListener != null) {
-            mGroupListener.onGroupInfoUpdate();
+            mGroupListener.onGroupListUpdate();
         }
         
         //保存goup list信息
@@ -218,17 +218,7 @@ public class GroupManager {
         }
         return mPerf;
     }
-    
-    public void switchGroup(int id) {
-        mCurrentId = id;
-        if (mGroupListener != null) {
-            mGroupListener.onGroupInfoUpdate();
-        }
-    }
-    
-    public int getCurrentId() {
-        return mCurrentId;
-    }
+   
     
     public GroupInfo getGroupInfo(int id) {
         synchronized (mGroupList) {
@@ -313,7 +303,7 @@ public class GroupManager {
                     //排序
                     Collections.sort(mGroupList);
                     if (mGroupListener != null) {
-                        mGroupListener.onGroupInfoUpdate();
+                        mGroupListener.onGroupListUpdate();
                     }
                 }
             }
@@ -328,17 +318,6 @@ public class GroupManager {
         };
         
         return service_connection;
-    }
-    
-    public static String getRandomString(int length){
-        String str="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random=new Random();
-        StringBuffer sb=new StringBuffer();
-        for(int i=0;i<length;i++){
-            int number=random.nextInt(62);
-            sb.append(str.charAt(number));
-        }
-        return sb.toString();
     }
     
     public String getLocalCacheDir(String class_name) {

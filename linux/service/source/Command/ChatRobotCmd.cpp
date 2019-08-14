@@ -10,8 +10,8 @@
 const std::vector<ChatRobotCmd::CommandInfo> ChatRobotCmd::gCommandInfoList{
         {"h", "help",  ChatRobotCmd::Help,            "Print help usages."},
         //{'a', "add",   ChatRobotCmd::AddFriend,       "Add a new friend"},
-        {"b", "block", ChatRobotCmd::BlockFriend,     "Block a friend"},
-        {"d", "del",   ChatRobotCmd::DelFriend,       "Delete a friend"},
+        {"b", "block", ChatRobotCmd::BlockFriend,     "Block a friend by index."},
+        {"d", "del",   ChatRobotCmd::DelFriend,       "Delete a friend by index."},
         //{'i', "info",  ChatRobotCmd::PrintInfo, "Print friend's detail infommation"},
         {"l", "list",  ChatRobotCmd::ListFriends,     "List friends."},
         {"u", "update",  ChatRobotCmd::UpdateNickName,     "Update group name"},
@@ -84,12 +84,15 @@ int ChatRobotCmd::Help(void* context,
                        const std::vector<std::string> &args,
                        std::string &errMsg) {
     std::cout << "Usage:" << std::endl;
-    std::string msg = "";
 
+    std::string address;
+    auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
+    carrier_robot->getAddress(address);
+    std::string msg = "GroupAddress:" + address+"\n";
     for (const auto &cmdInfo : gCommandInfoList) {
         msg += ""+cmdInfo.mCmd + " | " + cmdInfo.mLongCmd + " : "+ cmdInfo.mUsage + "\n";
     }
-    auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
+
     carrier_robot->helpCmd(args, msg);
     return 0;
 }
