@@ -28,7 +28,7 @@ deactivate
 --------------------------------------------------
 [chatrobot]
 data_dir = /home/xxxxxxx/workspace/testData
-socket_ip = 127.0.0.1
+socket_ip = 0.0.0.0
 socket_port = 2222
 --------------------------------------------------
 第5步 - 创建systemd单元文件
