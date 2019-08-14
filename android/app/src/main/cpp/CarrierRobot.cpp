@@ -178,6 +178,7 @@ namespace chatrobot {
                 memberInfo->UnLock();
                 continue;
             }
+
             std::shared_ptr<std::vector<std::shared_ptr<MessageInfo>>> message_list = mDatabaseProxy->getMessages(
                     memberInfo->mFriendid, memberInfo->mMsgTimeStamp, 100);
             if (message_list.get() != nullptr) {
@@ -200,8 +201,13 @@ namespace chatrobot {
                                                               memberInfo->mFriendid.get()->c_str(),
                                                               msg, strlen(msg));
                         if (msg_ret != 0) {
+                            int err = ela_get_error();
+                            char strerr_buf[512] = {0};
+                            ela_get_strerror(err, strerr_buf, sizeof(strerr_buf));
+                            Log::E(Log::TAG, "relayMessages to:%s, msg:%s, error:%s", memberInfo->mFriendid.get()->c_str(), msg, strerr_buf);
                             break;
                         }
+                        Log::I(Log::TAG, "relayMessages to:%s, msg:%s, success", memberInfo->mFriendid.get()->c_str(), msg);
                         info_changed = true;
                         memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
                     }
