@@ -144,6 +144,12 @@ public class MainActivity extends Activity implements GroupListener {
     }
     
     private void showGroupInfo(int index) {
+        List<GroupInfo> list = mGroupManager.getGroupList();
+        if (index <0 || index >= list.size()) {
+            Log.d(TAG, "showGroupInfo index is invalid:"+index);
+            return ;
+        }
+        
         GroupInfo groupInfo = mGroupManager.getGroupList().get(index);
         if (groupInfo != null) {
             synchronized (groupInfo) {
@@ -170,7 +176,10 @@ public class MainActivity extends Activity implements GroupListener {
                 //更新列表信息
                 mAdapter.setData(mGroupManager.getGroupList());
                 int index = mGroupListView.getSelectedItemPosition();
-                showGroupInfo(index);
+                if (index >=0) {
+                    showGroupInfo(index);
+                }
+                
             }
         });
     }
