@@ -59,6 +59,7 @@ namespace chatrobot {
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);
         std::shared_ptr<std::vector<std::shared_ptr<MemberInfo>>>getFriendList();
         void helpCmd(const std::vector<std::string> &args, const std::string& message);
+        void showAddressCmd(const std::vector<std::string> &args);
         void listCmd(const std::vector<std::string> &args);
         void delCmd(const std::vector<std::string> &args);
         void blockFriendCmd(const std::vector<std::string> &args);

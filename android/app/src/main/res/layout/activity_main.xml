@@ -22,7 +22,7 @@
     <ListView
         android:id="@+id/groupList"
         android:layout_width="1124dp"
-        android:layout_height="675dp"
+        android:layout_height="680dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_marginTop="256dp"

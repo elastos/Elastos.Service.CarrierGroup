@@ -39,7 +39,7 @@ private:
                     const std::vector<std::string>& args,
                     std::string& errMsg);
 
-    static int AddFriend(void* context,
+    static int Address(void* context,
                          const std::vector<std::string>& args,
                          std::string& errMsg);
 

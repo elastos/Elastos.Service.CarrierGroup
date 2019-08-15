@@ -396,6 +396,24 @@ namespace chatrobot {
         return str;                                // 返回转换日期时间后的string变量。
     }
 
+    void CarrierRobot::showAddressCmd(const std::vector<std::string> &args) {
+        if (args.size() >= 2) {
+            std::string address;
+            this->getAddress(address);
+
+            const std::string friend_id = args[1];
+            int ela_ret = ela_send_friend_message(mCarrier.get(), friend_id.c_str(),
+                                                  address.c_str(), strlen(address.c_str()));
+            if (ela_ret != 0) {
+                Log::I(Log::TAG,
+                       "showAddressCmd .c_str(): %s errno:(0x%x)",
+                       address.c_str(), ela_get_error());
+            }
+        }
+
+    }
+
+
     void CarrierRobot::helpCmd(const std::vector<std::string> &args, const std::string &message) {
         if (args.size() >= 2) {
             const std::string friend_id = args[1];
