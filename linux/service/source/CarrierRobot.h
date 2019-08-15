@@ -41,22 +41,23 @@ namespace chatrobot {
         int acceptFriend(std::shared_ptr<std::string>friendid);
         int getUserId(std::string& userid);
         static void OnCarrierConnection(ElaCarrier *carrier,
-                                               ElaConnectionStatus status, void *context);
+                                        ElaConnectionStatus status, void *context);
         static void OnCarrierFriendRequest(ElaCarrier *carrier, const char *friendid,
-                                                  const ElaUserInfo *info,
-                                                  const char *hello, void *context);
+                                           const ElaUserInfo *info,
+                                           const char *hello, void *context);
         static void OnCarrierFriendInfoChanged(ElaCarrier *carrier, const char *friendid,
                                                const ElaFriendInfo *info, void *context);
         static void OnCarrierFriendConnection(ElaCarrier *carrier,const char *friendid,
-                                                     ElaConnectionStatus status, void *context);
+                                              ElaConnectionStatus status, void *context);
 
         static void OnCarrierFriendMessage(ElaCarrier *carrier, const char *from,
-                                                  const void *msg, size_t len, void *context);
+                                           const void *msg, size_t len, void *context);
 
         static int GetCarrierUsrIdByAddress(const std::string& address, std::string& usrId);
         void runCarrierInner();
         void runCarrier();
         bool inRemovedList(std::shared_ptr<std::string> friendid);
+        void showAddressCmd(const std::vector<std::string> &args);
         void updateMemberInfo(std::shared_ptr<std::string> friendid, std::shared_ptr<std::string> nickname,
                               ElaConnectionStatus status);
         void addMessgae(std::shared_ptr<std::string> friend_id, std::shared_ptr<std::string> message, std::time_t send_time);

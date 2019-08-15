@@ -9,13 +9,13 @@
 /* =========================================== */
 const std::vector<ChatRobotCmd::CommandInfo> ChatRobotCmd::gCommandInfoList{
         {"h", "help",  ChatRobotCmd::Help,            "Print help usages."},
-        //{'a', "add",   ChatRobotCmd::AddFriend,       "Add a new friend"},
+        {"a", "address",   ChatRobotCmd::Address,     "Show group address."},
         {"b", "block", ChatRobotCmd::BlockFriend,     "Block a friend by index."},
-        {"d", "del",   ChatRobotCmd::DelFriend,       "Delete a friend by index."},
+        {"d", "del",   ChatRobotCmd::DelFriend,       "Delete a friend  by index."},
         //{'i', "info",  ChatRobotCmd::PrintInfo, "Print friend's detail infommation"},
         {"l", "list",  ChatRobotCmd::ListFriends,     "List friends."},
-        {"u", "update",  ChatRobotCmd::UpdateNickName,     "Update group name"},
-        {"e", "exit",  ChatRobotCmd::DeleteGroup,     "Delete group and exit"},
+        {"u", "update",  ChatRobotCmd::UpdateNickName,     "Update group name."},
+        {"e", "exit",  ChatRobotCmd::DeleteGroup,     "Delete group and exit."},
 
 };
 
@@ -84,63 +84,45 @@ int ChatRobotCmd::Help(void* context,
                        const std::vector<std::string> &args,
                        std::string &errMsg) {
     std::cout << "Usage:" << std::endl;
+    std::string msg = "";
 
-    std::string address;
-    auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
-    carrier_robot->getAddress(address);
-    std::string msg = "GroupAddress:" + address+"\n";
     for (const auto &cmdInfo : gCommandInfoList) {
         msg += ""+cmdInfo.mCmd + " | " + cmdInfo.mLongCmd + " : "+ cmdInfo.mUsage + "\n";
     }
-
+    auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
     carrier_robot->helpCmd(args, msg);
     return 0;
 }
 
-int ChatRobotCmd::AddFriend(void* context,
-                            const std::vector<std::string> &args,
-                            std::string &errMsg) {
+int ChatRobotCmd::Address(void* context,
+            const std::vector<std::string> &args,
+            std::string &errMsg) {
 
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
-    /*auto weakFriendMgr = contact->getFriendManager();
-    auto friendMgr = weakFriendMgr.lock();
-    if (friendMgr.get() == nullptr) {
-        errMsg = "FriendManager has been released.";
-        return -1;
-    }
-
-    auto friendId = args.size() > 1 ? args[1] : "";
-    auto summary = args.size() > 2 ? args[2] : "";
-
-    int ret = friendMgr->tryAddFriend(friendId, summary);
-    if (ret < 0) {
-        errMsg = "Failed to add friend ret=" + std::to_string(ret);
-        return ret;
-    }*/
-
+    carrier_robot->showAddressCmd(args);
     return 0;
 }
 
 
 int ChatRobotCmd::BlockFriend(void* context,
-                       const std::vector<std::string> &args,
-                       std::string &errMsg) {
+                              const std::vector<std::string> &args,
+                              std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
     carrier_robot->blockFriendCmd(args);
     return 0;
 }
 
 int ChatRobotCmd::DelFriend(void* context,
-                     const std::vector<std::string> &args,
-                     std::string &errMsg) {
+                            const std::vector<std::string> &args,
+                            std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
     carrier_robot->delCmd(args);
     return 0;
 }
 
 int ChatRobotCmd::ListFriends(void* context,
-                       const std::vector<std::string> &args,
-                       std::string &errMsg) {
+                              const std::vector<std::string> &args,
+                              std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
     carrier_robot->listCmd(args);
     return 0;
@@ -153,15 +135,15 @@ int ChatRobotCmd::UpdateNickName(void *context, const std::vector<std::string> &
     return 0;
 }
 int ChatRobotCmd::DeleteGroup(void *context, const std::vector<std::string> &args,
-                                 std::string &errMsg) {
+                              std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
     carrier_robot->deleteGroupCmd(args);
     return 0;
 }
 
 int ChatRobotCmd::PrintInfo(void* context,
-                           const std::vector<std::string> &args,
-                           std::string &errMsg) {
+                            const std::vector<std::string> &args,
+                            std::string &errMsg) {
     auto carrier_robot = reinterpret_cast< chatrobot::CarrierRobot *>(context);
 
     return 0;

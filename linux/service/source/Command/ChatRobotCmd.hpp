@@ -39,13 +39,13 @@ private:
                     const std::vector<std::string>& args,
                     std::string& errMsg);
 
-    static int AddFriend(void* context,
-                         const std::vector<std::string>& args,
-                         std::string& errMsg);
+    static int Address(void* context,
+                       const std::vector<std::string>& args,
+                       std::string& errMsg);
 
     static int BlockFriend(void* context,
-                              const std::vector<std::string>& args,
-                              std::string& errMsg);
+                           const std::vector<std::string>& args,
+                           std::string& errMsg);
     static int DelFriend(void* context,
                          const std::vector<std::string>& args,
                          std::string& errMsg);
@@ -55,12 +55,12 @@ private:
                            std::string& errMsg);
 
     static int UpdateNickName(void* context,
-                           const std::vector<std::string>& args,
-                           std::string& errMsg);
-
-    static int DeleteGroup(void* context,
                               const std::vector<std::string>& args,
                               std::string& errMsg);
+
+    static int DeleteGroup(void* context,
+                           const std::vector<std::string>& args,
+                           std::string& errMsg);
     static int PrintInfo(void* context,
                          const std::vector<std::string>& args,
                          std::string& errMsg);
