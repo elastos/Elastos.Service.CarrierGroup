@@ -62,7 +62,9 @@ public class MainActivity extends Activity implements GroupListener {
                 }
             });
         }
-        float targetDensity = 1.0f;//appDisplayMetrics.density;
+        DisplayMetrics activityDisplayMetrics = activity.getResources().getDisplayMetrics();
+        int design_map_width = 1920;
+        float targetDensity = (float)activityDisplayMetrics.widthPixels/design_map_width;//appDisplayMetrics.density;
         float targetScaledDensity = targetDensity * (sNoncompatScaledDensity / sNoncompatDensity);
         int targetDensityDpi = (int) (240 * targetDensity);
         
@@ -70,7 +72,7 @@ public class MainActivity extends Activity implements GroupListener {
         appDisplayMetrics.scaledDensity = targetScaledDensity;
         appDisplayMetrics.densityDpi = targetDensityDpi;
         
-        DisplayMetrics activityDisplayMetrics = activity.getResources().getDisplayMetrics();
+       
         activityDisplayMetrics.density = targetDensity;
         activityDisplayMetrics.scaledDensity = targetScaledDensity;
         activityDisplayMetrics.densityDpi = targetDensityDpi;
