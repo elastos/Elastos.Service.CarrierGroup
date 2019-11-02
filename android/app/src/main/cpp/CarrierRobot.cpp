@@ -8,7 +8,7 @@
 #include <ctime>
 
 using namespace std;
-
+#include <stdexcept>
 #include <ela_carrier.h>
 #include <ela_session.h>
 #include <thread>
@@ -185,31 +185,41 @@ namespace chatrobot {
                 for (int i = 0; i < message_list->size(); i++) {
                     std::shared_ptr<MessageInfo> message = message_list->at(i);
                     if (message.get() != nullptr) {
-                        char msg[1024];
-                        std::shared_ptr<chatrobot::MemberInfo> target_memberInfo = mDatabaseProxy->getMemberInfo(
-                                message->mFriendid);
-                        if (target_memberInfo.get() != nullptr) {
-                            target_memberInfo->Lock();
-                            sprintf(msg, "%s: %s \n[%s]",
-                                    target_memberInfo->mNickName.get()->c_str(),
-                                    message->mMsg.get()->c_str(),
-                                    this->convertDatetimeToString(message->mSendTimeStamp).c_str());
-                            target_memberInfo->UnLock();
-                        }
+                        try {
+                            char msg[1024];
+                            std::shared_ptr<chatrobot::MemberInfo> target_memberInfo = mDatabaseProxy->getMemberInfo(
+                                    message->mFriendid);
+                            if (target_memberInfo.get() != nullptr) {
+                                target_memberInfo->Lock();
+                                sprintf(msg, "%s: %s \n[%s]",
+                                        target_memberInfo->mNickName.get()->c_str(),
+                                        message->mMsg.get()->c_str(),
+                                        this->convertDatetimeToString(
+                                                message->mSendTimeStamp).c_str());
+                                target_memberInfo->UnLock();
+                            }
 
-                        int msg_ret = ela_send_friend_message(mCarrier.get(),
-                                                              memberInfo->mFriendid.get()->c_str(),
-                                                              msg, strlen(msg));
-                        if (msg_ret != 0) {
-                            int err = ela_get_error();
-                            char strerr_buf[512] = {0};
-                            ela_get_strerror(err, strerr_buf, sizeof(strerr_buf));
-                            Log::E(Log::TAG, "relayMessages to:%s, msg:%s, error:%s", memberInfo->mFriendid.get()->c_str(), msg, strerr_buf);
-                            break;
+                            int msg_ret = ela_send_friend_message(mCarrier.get(),
+                                                                  memberInfo->mFriendid.get()->c_str(),
+                                                                  msg, strlen(msg));
+                            if (msg_ret != 0) {
+                                int err = ela_get_error();
+                                char strerr_buf[512] = {0};
+                                ela_get_strerror(err, strerr_buf, sizeof(strerr_buf));
+                                Log::E(Log::TAG, "relayMessages to:%s, msg:%s, error:%s",
+                                       memberInfo->mFriendid.get()->c_str(), msg, strerr_buf);
+                                break;
+                            }
+                            Log::I(Log::TAG, "relayMessages to:%s, msg:%s, success, mSendTimeStamp:%s",
+                                   memberInfo->mFriendid.get()->c_str(), msg, this->convertDatetimeToString(
+                                            message->mSendTimeStamp).c_str());
+                            info_changed = true;
+                            memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
+                        } catch (exception& e) {
+                            Log::E(Log::TAG, "relayMessages to:%s, error:%s",
+                                   memberInfo->mFriendid.get()->c_str(), e.what());
+                            continue;
                         }
-                        Log::I(Log::TAG, "relayMessages to:%s, msg:%s, success", memberInfo->mFriendid.get()->c_str(), msg);
-                        info_changed = true;
-                        memberInfo->mMsgTimeStamp = message->mSendTimeStamp;
                     }
                 }
             }
@@ -226,10 +236,15 @@ namespace chatrobot {
                                   std::shared_ptr<std::string> message, std::time_t send_time) {
         std::string errMsg;
         std::string msg = *message.get();
-        if (msg.size() > 38 &&
-            std::regex_match(msg.substr(0, 37).c_str(), *mMsgReg.get()) == true) {
-            msg = msg.substr(38);//包含空格
+        try {
+            if (msg.size() > 38 &&
+                std::regex_match(msg.substr(0, 37).c_str(), *mMsgReg.get()) == true) {
+                msg = msg.substr(38);//包含空格
+            }
+        } catch (exception& e) {
+            Log::E(Log::TAG, "addMessgae error:%s", e.what());
         }
+
         std::string pre_cmd = msg + " " + *friend_id.get();//Pretreatment cmd
         int ret = ChatRobotCmd::Do(this, pre_cmd, errMsg);
         if (ret < 0) {

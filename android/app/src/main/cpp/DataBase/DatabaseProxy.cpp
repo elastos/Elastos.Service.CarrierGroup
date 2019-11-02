@@ -200,7 +200,7 @@ namespace chatrobot {
         int nrow;          /* Number of result rows written here */
         int ncolumn;
         std::string t_strSql;
-        t_strSql = "select * from message_table where FriendId!='"+*friend_id.get()+"'";
+        t_strSql = "select * from message_table where FriendId !='"+*friend_id.get()+"'";
         t_strSql += " and SendTimeStamp>"+std::to_string(send_time);
         t_strSql += " order by SendTimeStamp desc limit 0,"+std::to_string(max_limit)+";";
         /*step 2: sql语句对象。*/
@@ -232,6 +232,7 @@ namespace chatrobot {
                 message_info->mFriendid = std::make_shared<std::string>(azResult[4*i + 1]);
                 message_info->mMsg = std::make_shared<std::string>(azResult[4*i + 2]);
                 message_info->mSendTimeStamp = atol(azResult[4*i + 3]);
+                Log::I(TAG, "getMessages, mFriendid:%s, mMsg: %s",  message_info->mFriendid->c_str(), message_info->mMsg->c_str());
                 messages_list->push_back(message_info);
             }
         }
